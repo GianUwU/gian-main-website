@@ -1,0 +1,590 @@
+/* File detail container */
+.file-detail-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: #F0F2EF;
+}
+
+.file-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.back-link {
+  color: #EF6351;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 16px;
+  transition: color 0.2s, transform 0.2s;
+  display: inline-block;
+}
+
+.back-link:hover {
+  color: #ad3a2b;
+  transform: translateX(-2px);
+}
+
+.private-badge {
+  background: #b00020;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Main card - Two column layout for batch */
+.file-detail-card {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 0;
+}
+
+/* Left side - File preview */
+.file-detail-preview {
+  background: #f8f9fa;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #e9ecef;
+  min-height: 500px;
+}
+
+.file-detail-preview img {
+  max-width: 100%;
+  max-height: 500px;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+}
+
+.file-icon-large {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.file-icon-large .icon {
+  font-size: 6rem;
+  margin-bottom: 1rem;
+  color: #999;
+}
+
+.file-icon-large .extension {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #495057;
+  background: #e9ecef;
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+}
+
+.preview-filename {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #212529;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.preview-filesize {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-bottom: 1.5rem;
+}
+
+.btn-download-preview {
+  background: #667eea;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-download-preview:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+}
+
+/* Right side - File info */
+.file-detail-info {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.batch-header-compact {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.batch-icon-compact {
+  font-size: 3rem;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.file-title {
+  font-size: 1.75rem;
+  margin: 0;
+  color: #213547;
+}
+
+.batch-description {
+  margin: 0.5rem 0 0 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+/* Metadata */
+.file-metadata {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.metadata-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metadata-item .label {
+  font-size: 0.875rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.metadata-item .value {
+  font-size: 1rem;
+  color: #213547;
+  font-weight: 500;
+}
+
+.expiration-warning {
+  grid-column: 1 / -1;
+  background: rgba(245, 158, 11, 0.1);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.expiration-warning .label {
+  color: #f59e0b;
+}
+
+.expires-value {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+/* Batch files section */
+.batch-files-section-compact {
+  border-top: 2px solid #e9ecef;
+  padding-top: 1.5rem;
+}
+
+.batch-files-section-compact h3 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem 0;
+  color: #213547;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.batch-files-section-compact h3::before {
+  content: '📂';
+  font-size: 1.2rem;
+}
+
+.batch-files-list-compact {
+  max-height: 350px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.batch-files-list-compact::-webkit-scrollbar {
+  width: 8px;
+}
+
+.batch-files-list-compact::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.batch-files-list-compact::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.batch-files-list-compact::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.batch-file-item-compact {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.batch-file-item-compact:hover {
+  background: #e9ecef;
+  border-color: #dee2e6;
+  transform: translateX(2px);
+}
+
+.batch-file-item-compact.active {
+  background: rgba(102, 126, 234, 0.08);
+  border-color: #667eea;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+}
+
+.file-icon-compact {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.file-info-compact {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.file-name-compact {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #213547;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-size-compact {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+/* Actions */
+.file-actions-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #e9ecef;
+}
+
+.btn-copy-link,
+.btn-delete-large,
+.btn-download-large {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-download-large {
+  background: #667eea;
+  color: white;
+  text-decoration: none;
+}
+
+.btn-download-large:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-copy-link {
+  background: #48bb78;
+  color: white;
+}
+
+.btn-copy-link:hover {
+  background: #38a169;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+}
+
+.btn-delete-large {
+  background: #b00020;
+  color: white;
+}
+
+.btn-delete-large:hover {
+  background: #8b0019;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(176, 0, 32, 0.4);
+}
+
+.copy-status-message {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+  font-weight: 500;
+  background: #c6f6d5;
+  color: #22543d;
+  border: 1px solid #9ae6b4;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.status-message {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.status-message.success {
+  background: #c6f6d5;
+  color: #22543d;
+  border: 1px solid #9ae6b4;
+}
+
+.status-message.error {
+  background: rgba(176, 0, 32, 0.06);
+  color: #b00020;
+  border: 1px solid rgba(176, 0, 32, 0.2);
+}
+
+/* For single file view */
+.file-description-section {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 10px;
+  border-left: 4px solid #F38375;
+}
+
+.file-description-section h3 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  color: #F38375;
+  font-weight: 600;
+}
+
+.file-description-section p {
+  margin: 0;
+  font-size: 16px;
+  color: #444;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* Loading and error states */
+.loading, .error-message {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+}
+
+.error-message h2 {
+  color: #b00020;
+  margin-bottom: 20px;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 400px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.modal p {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.1rem;
+  color: #212529;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button-confirm {
+  background: #b00020;
+  color: white;
+}
+
+.button-confirm:hover {
+  background: #8b0019;
+}
+
+.button-cancel {
+  background: #6c757d;
+  color: white;
+}
+
+.button-cancel:hover {
+  background: #5a6268;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .file-detail-card {
+    grid-template-columns: 1fr;
+  }
+  
+  .file-detail-preview {
+    border-right: none;
+    border-bottom: 1px solid #e9ecef;
+    min-height: 300px;
+  }
+  
+  .file-metadata {
+    grid-template-columns: 1fr;
+  }
+  
+  .file-detail-info {
+    padding: 1.5rem;
+  }
+  
+  .file-title {
+    font-size: 1.5rem;
+  }
+}
+
+/* File click area for batch files */
+.file-click-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+/* Download button for individual files in batch list */
+.btn-download-tiny {
+  background: #667eea;
+  color: white;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn-download-tiny:hover {
+  background: #5568d3;
+  transform: scale(1.1);
+}
+
+/* Download all files button */
+.btn-download-all {
+  background: #667eea;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-download-all:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}

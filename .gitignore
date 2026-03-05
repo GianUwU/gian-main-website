@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.db.backup_*
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Cache
+.cache/
+.vite/
+.pytest_cache/
+
+# Uploads (if you want to ignore user uploads)
+# uploads/
+
+# Databases (uncomment if you don't want to track local DBs)
+# *.db
+# *.sqlite
+# *.sqlite3
