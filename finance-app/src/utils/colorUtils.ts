@@ -15,23 +15,38 @@ export const PLEASANT_COLORS = [
 ];
 
 /**
- * Get a category color based on its position in a sorted list of all categories.
- * This ensures consistent colors across the app regardless of insertion order.
+ * Improved hash function to consistently convert a string to a number.
+ * Uses a combination of character codes with better distribution.
  */
-export function getCategoryColor(category: string, allCategoriesSorted: string[]): string {
-  const index = allCategoriesSorted.indexOf(category);
-  if (index === -1) return PLEASANT_COLORS[0];
-  return PLEASANT_COLORS[index % PLEASANT_COLORS.length];
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash);
 }
 
 /**
- * Create a color map for multiple categories.
- * Categories should be sorted before passing to ensure consistent colors.
+ * Get a category color based on the category name.
+ * The same category name always gets the same color, regardless of other categories.
+ * New categories added won't affect the colors of existing ones.
  */
-export function createCategoryColorMap(categoriesSorted: string[]): Map<string, string> {
+export function getCategoryColor(category: string): string {
+  const hash = hashString(category);
+  const index = hash % PLEASANT_COLORS.length;
+  return PLEASANT_COLORS[index];
+}
+
+/**
+ * Create a color map for multiple categories based on their names.
+ * Colors are determined by the category name hash, ensuring consistency.
+ */
+export function createCategoryColorMap(categories: string[]): Map<string, string> {
   const colorMap = new Map<string, string>();
-  categoriesSorted.forEach((cat, idx) => {
-    colorMap.set(cat, PLEASANT_COLORS[idx % PLEASANT_COLORS.length]);
+  categories.forEach((cat) => {
+    colorMap.set(cat, getCategoryColor(cat));
   });
   return colorMap;
 }

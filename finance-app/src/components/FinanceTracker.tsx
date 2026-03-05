@@ -296,11 +296,6 @@ export default function FinanceTracker() {
   const availableYears = Array.from(
     new Set(transactions.map((tx) => parseInt(tx.date.slice(0, 4))))
   ).sort((a, b) => b - a);
-  
-  // Get all unique expense categories sorted for consistent color mapping
-  const allExpenseCategories = Array.from(
-    new Set(transactions.filter(tx => tx.type !== "income").flatMap((tx) => tx.categories || []))
-  ).filter(Boolean).sort();
 
   function handlePreviousMonth() {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
@@ -564,7 +559,7 @@ export default function FinanceTracker() {
                     const firstCategory = (tx.categories && tx.categories.length > 0) ? tx.categories[0] : "Other";
                     const bgColor = tx.type === "income" 
                       ? "#e8f5e9" 
-                      : hexToRgba(getCategoryColor(firstCategory, allExpenseCategories), 0.15);
+                      : hexToRgba(getCategoryColor(firstCategory), 0.15);
                     
                     return (
                       <tr key={tx.id} style={{ backgroundColor: bgColor }}>
@@ -586,7 +581,7 @@ export default function FinanceTracker() {
                                       key={cat}
                                       className="category-badge"
                                       style={{
-                                        backgroundColor: getCategoryColor(cat, allExpenseCategories),
+                                        backgroundColor: getCategoryColor(cat),
                                         color: "#fff",
                                       }}
                                     >
