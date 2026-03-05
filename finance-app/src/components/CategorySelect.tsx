@@ -17,9 +17,6 @@ export default function CategorySelect({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Get all categories sorted for consistent colors
-  const sortedCategories = [...categories].sort();
-
   const handleSelect = (cat: string) => {
     onChange(cat);
     setIsOpen(false);
@@ -39,7 +36,7 @@ export default function CategorySelect({
   }, [isOpen]);
 
   const selectedCategory = value !== "__choose_category__" && value !== "__add_category__" ? value : null;
-  const selectedColor = selectedCategory ? getCategoryColor(selectedCategory, sortedCategories) : "#ccc";
+  const selectedColor = selectedCategory ? getCategoryColor(selectedCategory) : "#ccc";
 
   return (
     <div ref={dropdownRef} style={{ position: "relative", width: "100%" }}>
@@ -101,7 +98,7 @@ export default function CategorySelect({
             if (cat === "__add_category__") return null;
             if (cat === "__choose_category__") return null;
 
-            const catColor = getCategoryColor(cat, sortedCategories);
+            const catColor = getCategoryColor(cat);
             const isSelected = value === cat;
 
             return (

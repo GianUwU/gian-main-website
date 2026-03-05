@@ -95,13 +95,9 @@ export default function Stats() {
   // Filter only expense transactions for stats
   const expenseTransactions = transactions.filter((tx) => tx.type !== "income");
   
-  // Get all unique expense categories sorted for consistent color mapping
-  const categories = Array.from(new Set(expenseTransactions.flatMap((t) => t.categories || []))).filter(Boolean).sort();
-  
-  // Pleasant, hand-picked color palette
-  // Sort categories to ensure consistent color mapping across the app
-  const sortedCategories = [...categories].sort();
-  const categoryColorMap = createCategoryColorMap(sortedCategories);
+  // Get all unique expense categories for color mapping
+  const categories = Array.from(new Set(expenseTransactions.flatMap((t) => t.categories || []))).filter(Boolean);
+  const categoryColorMap = createCategoryColorMap(categories);
 
   const monthBreakdowns = months.map((m) => {
     const breakdown = new Map<string, number>();
