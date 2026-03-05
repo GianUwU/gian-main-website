@@ -1,0 +1,53 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist/
+build/
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Database files (don't include in image, use volumes instead)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Uploads directory (should be a volume)
+uploads/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+README*
+
+# Backups
+*.backup*
+*.bak

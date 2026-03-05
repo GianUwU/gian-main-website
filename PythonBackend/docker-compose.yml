@@ -1,0 +1,40 @@
+services:
+  main-backend:
+    build: .
+    container_name: main-backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./main.py:/app/main.py
+      - ./auth.py:/app/auth.py
+      - ./auth.db:/app/auth.db
+      - ./tasks.db:/app/tasks.db
+    restart: unless-stopped
+
+  drop-backend:
+    build: .
+    container_name: drop-backend
+    command: uvicorn drop:app --host 0.0.0.0 --port 8001 --reload
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./drop.py:/app/drop.py
+      - ./auth.py:/app/auth.py
+      - ./uploads:/app/uploads
+      - ./auth.db:/app/auth.db
+      - ./drop_files.db:/app/drop_files.db
+    restart: unless-stopped
+
+  finance-backend:
+    build: .
+    container_name: finance-backend
+    command: uvicorn finance:app --host 0.0.0.0 --port 8002 --reload
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./finance.py:/app/finance.py
+      - ./auth.py:/app/auth.py
+      - ./auth.db:/app/auth.db
+      - ./finance.db:/app/finance.db
+    restart: unless-stopped
