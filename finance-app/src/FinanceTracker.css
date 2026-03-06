@@ -175,10 +175,12 @@
 
 .flip-card-button:focus {
   outline: none;
+  background: none;
 }
 
 .flip-card-button:active {
   outline: none;
+  background: none;
 }
 
 .flip-card-button.rotated {
@@ -186,7 +188,7 @@
 }
 
 .flip-card-button:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: none;
 }
 
 .form {
