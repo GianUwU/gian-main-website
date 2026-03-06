@@ -17,15 +17,25 @@ hash_password() {
 # Function to list all users
 list_users() {
     echo "=== All Users ==="
-    sqlite3 "$DB_PATH" <<EOF
-.headers on
-.mode column
-SELECT id, username, 
-       CASE WHEN is_admin = 1 THEN 'Yes' ELSE 'No' END as admin,
-       created_at 
-FROM users 
-ORDER BY username;
-EOF
+    
+    # Get all users from auth database
+    sqlite3 "$DB_PATH" "SELECT id, username, CASE WHEN is_admin = 1 THEN 'Yes' ELSE 'No' END as admin, created_at FROM users ORDER BY username;" | while IFS='|' read -r user_id username admin created_at; do
+        # Count transactions from finance database
+        transaction_count=0
+        if [ -f "finance.db" ]; then
+            transaction_count=$(sqlite3 "finance.db" "SELECT COUNT(*) FROM transactions WHERE user_id = $user_id;" 2>/dev/null || echo "0")
+        fi
+        
+        # Count files from drop database
+        file_count=0
+        if [ -f "drop_files.db" ]; then
+            file_count=$(sqlite3 "drop_files.db" "SELECT COUNT(*) FROM files WHERE user_id = $user_id;" 2>/dev/null || echo "0")
+        fi
+        
+        # Format and display the user info
+        printf "%-4s | %-20s | Admin: %-3s | Transactions: %-4s | Files: %-4s | Created: %s\n" \
+            "$user_id" "$username" "$admin" "$transaction_count" "$file_count" "$created_at"
+    done
 }
 
 # Function to delete a user

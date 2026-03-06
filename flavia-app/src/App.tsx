@@ -1,8 +1,6 @@
 import './App.css'
 import { useState, useEffect, useRef } from 'react'
 
-const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1469029741540675861/FeNERCGDfB-GndbHW3Y2nt5jfWg0dRbN98R80lI_JRfd6a-zIbSH2l9IRBAOnIUgwCW5'
-
 const flowersImage = new URL('./assets/flowers.png', import.meta.url).href
 const goodImage = new URL('./assets/good.png', import.meta.url).href
 const usImage = new URL('./assets/us.png', import.meta.url).href
@@ -238,25 +236,6 @@ function App() {
     setCurrentConfession(newConfession)
   }
 
-  const sendDiscordNotification = async (message: string) => {
-    try {
-      await fetch(DISCORD_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: message,
-          embeds: [{
-            color: 16711680,
-            title: '❤️ Flavia said YES! ❤️',
-            description: message,
-            timestamp: new Date().toISOString()
-          }]
-        })
-      })
-    } catch (error) {
-      console.error('Failed to send Discord notification:', error)
-    }
-  }
 
   const getPromptText = () => {
     if (confirmLevel === 0) return ''
@@ -390,7 +369,6 @@ function App() {
             className="quiz-btn yes-btn" 
             onClick={() => {
               createFireworks()
-              sendDiscordNotification('Flavia said YES to being my Valentine! 💕')
               setShowModal(true)
               setConfirmLevel(0)
               setRandomImage(getRandomImage())
