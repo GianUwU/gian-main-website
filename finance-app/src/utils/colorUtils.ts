@@ -9,41 +9,9 @@ export const PLEASANT_COLORS = [
   '#4ECDC4', // turquoise
   '#FF6B9D', // pink
   '#95B8D1', // powder blue
+  '#B8A87E', // tan
   '#7BB662', // green
   '#D4A5A5', // dusty rose
-  '#5DADE2', // sky blue
-  '#48C9B0', // mint teal
-  '#AF7AC5', // lavender
-  '#F5B041', // soft amber
-  '#EC7063', // light red
-  '#52BE80', // fresh green
-  '#5499C7', // calm blue
-  '#A569BD', // purple
-  '#F1948A', // blush
-  '#BB8FCE', // soft violet
-  '#73C6B6', // seafoam
-  '#F0B27A', // peach
-  '#AED6F1', // pale blue
-  '#A3E4D7', // aqua mint
-  '#85C1E9', // airy blue
-  '#F8C471', // mellow orange
-  '#BB8FCE', // muted violet
-  '#76D7C4', // lagoon
-  '#F1948A', // warm blush
-  '#7FB3D5', // steel blue
-  '#C39BD3', // orchid
-  '#F0AFAF', // rose pink
-  '#73C6B6', // jade
-  '#F7DC6F', // honey yellow
-  '#6FA8DC', // calm sky
-  '#FFD966', // butter yellow
-  '#E06666', // muted red
-  '#8E7CC3', // soft indigo
-  '#76A5AF', // blue gray
-  '#F6B26B', // light orange
-  '#C27BA0', // dusty magenta
-  '#A4C2F4', // pastel blue
-  '#D5A6BD', // faded pink
 ];
 
 /**
