@@ -1,6 +1,6 @@
 @username = gian
 @password = 123456789
-@accessToken =
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJnaWFuIiwiaXNfYWRtaW4iOjAsImlhdCI6MTc3MzUzNjIwMCwiZXhwIjoxNzczNTM3NDAwfQ.lAe7cjckiSMIc-0MzBspOQfKSueFDkUZ6X0G50Rsy9A
 @refreshToken =
 
 ### Get all usernames
@@ -37,11 +37,41 @@ Content-Type: application/json
     "token": "{{refreshToken}}"
 }
 
-### Get posts (using the JWT token)
-GET http://localhost:3001/posts
+### Finance: Get transactions
+GET http://localhost:3001/transactions
 Authorization: Bearer {{accessToken}}
 
-### Logout (delete refresh token)
+### Finance: Add transaction
+POST http://localhost:3001/transactions
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+	"amount": 12.5,
+	"categories": ["food", "lunch"],
+	"description": "Sandwich",
+	"date": "2026-03-15",
+	"type": "expense"
+}
+
+### Finance: Update transaction (replace 1 with actual id)
+PUT http://localhost:3001/transactions/1
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+	"amount": 15.0,
+	"categories": ["food"],
+	"description": "Updated lunch",
+	"date": "2026-03-15",
+	"type": "expense"
+}
+
+### Finance: Delete transaction (replace 1 with actual id)
+DELETE http://localhost:3001/transactions/1
+Authorization: Bearer {{accessToken}}
+
+### Logout (delete all refresh tokens from user)
 DELETE http://localhost:3000/users/logout
 Content-Type: application/json
 

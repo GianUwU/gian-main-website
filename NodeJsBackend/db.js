@@ -4,6 +4,7 @@ const sqlite3 = require('sqlite3').verbose()
 
 const databasesDir = path.join(__dirname, 'Databases')
 const authDbPath = path.join(databasesDir, 'auth.db')
+const financeDbPath = path.join(databasesDir, 'finance.db')
 
 function ensureDatabasesDirectory() {
     if (!fs.existsSync(databasesDir)) {
@@ -73,12 +74,55 @@ async function initializeAuthDatabase() {
     })
 }
 
+async function initializeFinanceDatabase() {
+    ensureDatabasesDirectory()
+
+    const db = new sqlite3.Database(financeDbPath)
+
+    await run(db, 'PRAGMA foreign_keys = ON')
+
+    await run(db, `
+        CREATE TABLE IF NOT EXISTS transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            amount REAL NOT NULL,
+            description TEXT,
+            date TEXT,
+            type TEXT DEFAULT 'expense'
+        )
+    `)
+
+    await run(db, `
+        CREATE TABLE IF NOT EXISTS transaction_categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            transaction_id INTEGER NOT NULL,
+            category TEXT NOT NULL,
+            "order" INTEGER DEFAULT 0,
+            FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
+            UNIQUE(transaction_id, category)
+        )
+    `)
+
+    await new Promise((resolve, reject) => {
+        db.close(err => {
+            if (err) {
+                reject(err)
+                return
+            }
+            resolve()
+        })
+    })
+}
+
 async function initializeAllDatabases() {
     await initializeAuthDatabase()
+    await initializeFinanceDatabase()
 }
 
 module.exports = {
     initializeAllDatabases,
     initializeAuthDatabase,
+    initializeFinanceDatabase,
     authDbPath,
+    financeDbPath,
 }
