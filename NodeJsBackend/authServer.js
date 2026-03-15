@@ -257,8 +257,53 @@ app.post('/users/register', asyncHandler(async (req, res) => {
 
 app.delete('/users/logout', asyncHandler(async (req, res) => {
     const refreshToken = parseTokenFromBody(req.body)
-    await runSql('DELETE FROM refresh_tokens WHERE token = ?', [refreshToken])
+
+    // Resolve the user_id from the token, then delete all their refresh tokens
+    const tokenRow = await getSql(
+        'SELECT user_id FROM refresh_tokens WHERE token = ?',
+        [refreshToken]
+    )
+
+    if (!tokenRow) {
+        throw new ApiError(403, 'Refresh token is invalid or has already been revoked.')
+    }
+
+    await runSql('DELETE FROM refresh_tokens WHERE user_id = ?', [tokenRow.user_id])
     res.sendStatus(204)
+}))
+
+// Change password
+app.post('/users/change-password', authenticateAccessToken, asyncHandler(async (req, res) => {
+    const currentPassword = req.body?.current_password
+    const newPassword = req.body?.new_password
+
+    if (typeof currentPassword !== 'string' || currentPassword.length === 0) {
+        throw new ApiError(400, 'current_password is required.')
+    }
+
+    const validatedNewPassword = parsePassword(newPassword)
+
+    const user = await getSql(
+        'SELECT id, password FROM users WHERE id = ?',
+        [req.user.id]
+    )
+
+    if (!user) {
+        throw new ApiError(404, 'User not found.')
+    }
+
+    const isCurrentValid = await bcrypt.compare(currentPassword, user.password)
+    if (!isCurrentValid) {
+        throw new ApiError(401, 'Current password is incorrect.')
+    }
+
+    const hashedNew = await bcrypt.hash(validatedNewPassword, 10)
+    await runSql('UPDATE users SET password = ? WHERE id = ?', [hashedNew, req.user.id])
+
+    // Revoke all refresh tokens so all other sessions are logged out
+    await runSql('DELETE FROM refresh_tokens WHERE user_id = ?', [req.user.id])
+
+    res.json({ message: 'Password changed successfully. All sessions have been logged out.' })
 }))
 
 // Login User

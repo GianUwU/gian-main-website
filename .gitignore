@@ -5,6 +5,7 @@ __pycache__/
 *.so
 .Python
 *.db.backup_*
+node_modules/
 
 # Node
 node_modules/
@@ -42,6 +43,8 @@ logs/
 .cache/
 .vite/
 .pytest_cache/
+
+/NodeJsBackend/Databases/
 
 # Uploads (if you want to ignore user uploads)
 # uploads/

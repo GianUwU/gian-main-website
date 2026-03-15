@@ -1,7 +1,9 @@
 #!/bin/bash
 # manage_accounts.sh - User account management script for the authentication system
 
-DB_PATH="auth.db"
+DB_PATH="Databases/auth.db"
+FINANCE_DB_PATH="Databases/finance.db"
+DROP_DB_PATH="Databases/drop_files.db"
 
 # Check if database exists
 if [ ! -f "$DB_PATH" ]; then
@@ -22,14 +24,14 @@ list_users() {
     sqlite3 "$DB_PATH" "SELECT id, username, CASE WHEN is_admin = 1 THEN 'Yes' ELSE 'No' END as admin, created_at FROM users ORDER BY username;" | while IFS='|' read -r user_id username admin created_at; do
         # Count transactions from finance database
         transaction_count=0
-        if [ -f "finance.db" ]; then
-            transaction_count=$(sqlite3 "finance.db" "SELECT COUNT(*) FROM transactions WHERE user_id = $user_id;" 2>/dev/null || echo "0")
+        if [ -f "$FINANCE_DB_PATH" ]; then
+            transaction_count=$(sqlite3 "$FINANCE_DB_PATH" "SELECT COUNT(*) FROM transactions WHERE user_id = $user_id;" 2>/dev/null || echo "0")
         fi
         
         # Count files from drop database
         file_count=0
-        if [ -f "drop_files.db" ]; then
-            file_count=$(sqlite3 "drop_files.db" "SELECT COUNT(*) FROM files WHERE user_id = $user_id;" 2>/dev/null || echo "0")
+        if [ -f "$DROP_DB_PATH" ]; then
+            file_count=$(sqlite3 "$DROP_DB_PATH" "SELECT COUNT(*) FROM files WHERE user_id = $user_id;" 2>/dev/null || echo "0")
         fi
         
         # Format and display the user info
