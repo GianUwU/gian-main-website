@@ -1,0 +1,50 @@
+@username = gian
+@password = 123456789
+@accessToken =
+@refreshToken =
+
+### Get all usernames
+GET http://localhost:3000/users
+
+### Register new user
+POST http://localhost:3000/users/register
+Content-Type: application/json
+
+{
+	"username": "{{username}}",
+	"is_admin": false,
+	"password": "{{password}}"
+}
+
+### Login
+POST http://localhost:3000/users/login
+Content-Type: application/json
+
+{
+	"username": "{{username}}",
+	"password": "{{password}}"
+}
+
+### Get current user info (id, username, is_admin)
+GET http://localhost:3000/users/info
+Authorization: Bearer {{accessToken}}
+
+### Refresh token
+POST http://localhost:3000/token
+Content-Type: application/json
+
+{
+    "token": "{{refreshToken}}"
+}
+
+### Get posts (using the JWT token)
+GET http://localhost:3001/posts
+Authorization: Bearer {{accessToken}}
+
+### Logout (delete refresh token)
+DELETE http://localhost:3000/users/logout
+Content-Type: application/json
+
+{
+    "token": "{{refreshToken}}"
+}
