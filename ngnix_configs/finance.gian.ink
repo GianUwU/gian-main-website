@@ -23,9 +23,9 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
     server_tokens off;
 
-    # Backend API endpoints - proxy to FastAPI backend
-    location ~ ^/(token|register|change-password|transactions|health|refresh)(/.*)?$ {
-        proxy_pass http://127.0.0.1:8002;
+    # Finance data API - proxy to Node finance backend
+    location /transactions {
+        proxy_pass http://127.0.0.1:3001;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -34,9 +34,9 @@ server {
         proxy_set_header Connection "";
     }
 
-    # User info endpoint
-    location /user/info {
-        proxy_pass http://127.0.0.1:8002;
+    # Auth API - proxy to Node auth backend
+    location /users {
+        proxy_pass http://127.0.0.1:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -45,9 +45,8 @@ server {
         proxy_set_header Connection "";
     }
 
-    # Admin API endpoints (not the page itself)
-    location ~ ^/admin/(users|reset-password|update-admin-status)(/.*)?$ {
-        proxy_pass http://127.0.0.1:8002;
+    location /token {
+        proxy_pass http://127.0.0.1:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -56,13 +55,28 @@ server {
         proxy_set_header Connection "";
     }
 
-    # Legacy /api/ support (if needed)
+    # Legacy /api/ support for finance data
+    location ~ ^/api/transactions(/.*)?$ {
+        rewrite ^/api/(.*)$ /$1 break;
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection "";
+    }
+
+    # Legacy /api/ support for auth routes
     location /api/ {
-        proxy_pass http://127.0.0.1:8002/;
+        rewrite ^/api/(.*)$ /$1 break;
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection "";
     }
 
     # Frontend - serve React app (must be last)

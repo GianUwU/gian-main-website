@@ -4,6 +4,8 @@
  * and retry the request once.
  */
 
+import { getCookie } from "./cookies";
+
 let refreshTokenFunction: (() => Promise<void>) | null = null;
 
 export function setRefreshTokenFunction(fn: () => Promise<void>) {
@@ -14,8 +16,7 @@ export async function fetchWithTokenRefresh(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  // Get the current token from localStorage
-  const token = localStorage.getItem("authToken");
+  const token = getCookie("authToken");
 
   // Add Authorization header if token exists and not already present
   const headers = new Headers(options.headers);
@@ -39,7 +40,7 @@ export async function fetchWithTokenRefresh(
       
       // Get the new token
       const newToken = localStorage.getItem("authToken");
-      if (!newToken) {
+      if (!newToken) {getCookie
         throw new Error("No token after refresh");
       }
 

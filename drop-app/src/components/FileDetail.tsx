@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../AuthContext'
-import BackendStatusIndicator from './BackendStatusIndicator'
 import { formatFileSize, formatDate, formatExpiresIn, isImage } from '../utils/fileUtils'
 import type { FileInfo, BatchInfo } from '../types'
 import '../FileDetail.css'
@@ -26,7 +25,7 @@ function FileDetail({ fileId }: FileDetailProps) {
 
   const loadFileDetails = async () => {
     try {
-      const response = await fetch(`/api/files/${fileId}`)
+      const response = await fetch(`/files/${fileId}`)
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -63,7 +62,7 @@ function FileDetail({ fileId }: FileDetailProps) {
 
     try {
       const fileId = file ? file.id : batch!.files[0].id
-      const response = await fetch(`/api/files/${fileId}`, {
+      const response = await fetch(`/files/${fileId}`, {
         method: 'DELETE',
         credentials: 'include'
       })
@@ -146,7 +145,7 @@ function FileDetail({ fileId }: FileDetailProps) {
             <div className="preview-filename">{displayFile.original_filename}</div>
             <div className="preview-filesize">{formatFileSize(displayFile.file_size)}</div>
             <button 
-              onClick={() => window.location.href = `/api/files/${displayFile.id}/now`}
+              onClick={() => window.location.href = `/files/${displayFile.id}/now`}
               className="btn-download-preview"
             >
               ⬇️ Download This File
@@ -213,7 +212,7 @@ function FileDetail({ fileId }: FileDetailProps) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        window.location.href = `/api/files/${f.id}/now`
+                        window.location.href = `/files/${f.id}/now`
                       }}
                       className="btn-download-tiny"
                       title="Download this file"
@@ -230,7 +229,7 @@ function FileDetail({ fileId }: FileDetailProps) {
                 onClick={() => {
                   batch.files.forEach((f, index) => {
                     setTimeout(() => {
-                      window.location.href = `/api/files/${f.id}/now`
+                      window.location.href = `/files/${f.id}/now`
                     }, index * 100)
                   })
                 }}
@@ -286,7 +285,6 @@ function FileDetail({ fileId }: FileDetailProps) {
           </div>
         )}
         
-        <BackendStatusIndicator />
       </div>
     )
   }
@@ -356,7 +354,7 @@ function FileDetail({ fileId }: FileDetailProps) {
 
           <div className="file-actions-detail">
             <button 
-              onClick={() => window.location.href = `/api/files/${file.id}/now`}
+              onClick={() => window.location.href = `/files/${file.id}/now`}
               className="btn-download-large"
             >
               ⬇️ Download File
@@ -409,7 +407,6 @@ function FileDetail({ fileId }: FileDetailProps) {
         </div>
       )}
       
-      <BackendStatusIndicator />
     </div>
   )
 }

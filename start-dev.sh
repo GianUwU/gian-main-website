@@ -1,9 +1,9 @@
 #!/bin/bash
 # start-dev.sh - Start all development servers (main, drop, and finance apps)
 
-echo "Starting all backend services..."
-cd PythonBackend
-docker-compose up --build -d
+echo "Starting Node backends..."
+cd NodeJsBackend
+docker compose up --build -d
 cd ..
 
 echo "Starting main-app on port 5173..."
@@ -33,9 +33,9 @@ cd ..
 echo "All services started. Use ./stop-dev.sh to stop."
 echo ""
 echo "Backends:"
-echo "  Main:     http://localhost:8000 (auth, portal)"
-echo "  Drop:     http://localhost:8001 (file sharing)"
-echo "  Finance:  http://localhost:8002 (finance tracker)"
+echo "  Auth:     http://localhost:3000 (Node auth for main/finance)"
+echo "  Finance:  http://localhost:3001 (Node finance tracker API)"
+echo "  Drop:     http://localhost:3002 (Node drop file sharing)"
 echo ""
 echo "Frontends:"
 echo "  Main:     http://localhost:5173 (gian.ink portal)"

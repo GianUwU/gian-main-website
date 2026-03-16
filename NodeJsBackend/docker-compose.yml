@@ -1,0 +1,37 @@
+services:
+  auth-backend:
+    build: .
+    container_name: node-auth-backend
+    command: node authServer.js
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./Databases:/app/Databases
+    restart: unless-stopped
+
+  finance-backend:
+    build: .
+    container_name: node-finance-backend
+    command: node financeServer.js
+    env_file:
+      - .env
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./Databases:/app/Databases
+    restart: unless-stopped
+
+  drop-backend:
+    build: .
+    container_name: node-drop-backend
+    command: node dropServer.js
+    env_file:
+      - .env
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./Databases:/app/Databases
+      - ./uploads:/app/uploads
+    restart: unless-stopped
