@@ -5,6 +5,7 @@ const sqlite3 = require('sqlite3').verbose()
 const databasesDir = path.join(__dirname, 'Databases')
 const authDbPath = path.join(databasesDir, 'auth.db')
 const financeDbPath = path.join(databasesDir, 'finance.db')
+const dropDbPath = path.join(databasesDir, 'drop_files.db')
 
 function ensureDatabasesDirectory() {
     if (!fs.existsSync(databasesDir)) {
@@ -114,15 +115,54 @@ async function initializeFinanceDatabase() {
     })
 }
 
+async function initializeDropDatabase() {
+    ensureDatabasesDirectory()
+
+    const db = new sqlite3.Database(dropDbPath)
+
+    await run(db, 'PRAGMA foreign_keys = ON')
+
+    await run(db, `
+        CREATE TABLE IF NOT EXISTS files (
+            id TEXT PRIMARY KEY,
+            filename TEXT NOT NULL,
+            original_filename TEXT NOT NULL,
+            description TEXT,
+            username TEXT NOT NULL,
+            user_id INTEGER NOT NULL,
+            uploaded_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            file_size INTEGER,
+            file_type TEXT,
+            is_private INTEGER DEFAULT 0,
+            expires_at TEXT,
+            batch_id TEXT,
+            file_path TEXT
+        )
+    `)
+
+    await new Promise((resolve, reject) => {
+        db.close(err => {
+            if (err) {
+                reject(err)
+                return
+            }
+            resolve()
+        })
+    })
+}
+
 async function initializeAllDatabases() {
     await initializeAuthDatabase()
     await initializeFinanceDatabase()
+    await initializeDropDatabase()
 }
 
 module.exports = {
     initializeAllDatabases,
     initializeAuthDatabase,
     initializeFinanceDatabase,
+    initializeDropDatabase,
     authDbPath,
     financeDbPath,
+    dropDbPath,
 }

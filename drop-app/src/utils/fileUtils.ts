@@ -40,7 +40,3 @@ export const formatExpiresIn = (expiresAt: string | null): string | null => {
   if (diffHours > 0) return `Expires in ${diffHours} hour${diffHours > 1 ? 's' : ''}`
   return 'Expires soon'
 }
-
-export const getFileExtension = (filename: string): string => {
-  return filename.split('.').pop()?.toUpperCase() || 'FILE'
-}

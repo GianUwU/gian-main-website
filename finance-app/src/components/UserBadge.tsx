@@ -27,13 +27,13 @@ export default function UserBadge() {
       return;
     }
 
-    if (newPassword.length < 4) {
-      setPasswordError("New password must be at least 4 characters.");
+    if (newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters.");
       return;
     }
 
     try {
-      const res = await fetchWithTokenRefresh("/change-password", {
+      const res = await fetchWithTokenRefresh("/users/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
