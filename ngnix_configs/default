@@ -16,6 +16,8 @@
 # Please see /usr/share/doc/nginx-doc/examples/ for more detailed examples.
 ##
 
+limit_req_zone $binary_remote_addr zone=default_site_limit:10m rate=15r/s;
+
 # Default server configuration
 #
 server {
@@ -46,6 +48,8 @@ server {
 	server_name _;
 
 	location / {
+		limit_req zone=default_site_limit burst=40 nodelay;
+
 		# First attempt to serve request as file, then
 		# as directory, then fall back to displaying a 404.
 		try_files $uri $uri/ =404;

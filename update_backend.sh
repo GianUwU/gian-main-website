@@ -1,7 +1,7 @@
 #!/bin/bash
 # update_backend.sh - Deploy Dockerized Node backends to server
 
-cd ~/gian-webserver/NodeJsBackend/ || exit
+cd ~/webserver/NodeJsBackend/ || exit
 
 echo "Copying Node backend files..."
 

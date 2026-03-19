@@ -201,10 +201,14 @@ app.post('/token', asyncHandler(async (req, res) => {
 
 // GET and POST Requests for Registration and Login
 
-// send all existing usernames
+// send all users with their data
 app.get('/users', asyncHandler(async (req, res) => {
-    const rows = await allSql('SELECT username FROM users ORDER BY username')
-    res.json(rows.map(row => row.username))
+    const rows = await allSql('SELECT id, username, is_admin FROM users ORDER BY username')
+    res.json(rows.map(row => ({
+        id: row.id,
+        username: row.username,
+        is_admin: Boolean(row.is_admin)
+    })))
 }))
 
 app.get('/users/info', authenticateAccessToken, asyncHandler(async (req,res) => {
