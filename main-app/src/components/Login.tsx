@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useAuth } from "../AuthContext";
-import BackendStatusIndicator from "./BackendStatusIndicator";
 import "../Login.css";
 
 export default function Login() {
@@ -36,7 +35,6 @@ export default function Login() {
 
   return (
     <>
-      <BackendStatusIndicator />
       <div className="login-page">
         <div className="login-container">
           <div className="login-card">

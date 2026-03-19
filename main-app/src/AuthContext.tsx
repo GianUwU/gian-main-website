@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       // THEN fetch admin status from server asynchronously
       // Even if this fails, user remains authenticated
-      fetch("/api/user/info", {
+      fetch("/users/info", {
         headers: {
           Authorization: `Bearer ${savedToken}`,
         },
@@ -98,12 +98,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           throw new Error("No refresh token available");
         }
 
-        const response = await fetch("/api/refresh", {
+        const response = await fetch("/token", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ refresh_token: savedRefreshToken }),
+          body: JSON.stringify({ token: savedRefreshToken }),
         });
 
         if (!response.ok) {
@@ -111,14 +111,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         const data = await response.json();
-        const newToken = data.access_token;
+        const newToken = data.accessToken;
         setToken(newToken);
         setCookie("authToken", newToken, 1); // 1 day for access token
         console.log("✅ Token refreshed successfully");
         
         // ALWAYS re-fetch admin status after token refresh from server
         try {
-          const userResponse = await fetch("/api/user/info", {
+          const userResponse = await fetch("/users/info", {
             headers: {
               Authorization: `Bearer ${newToken}`,
             },
@@ -152,12 +152,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (username: string, password: string) => {
     setError(null);
     try {
-      const response = await fetch("/api/token", {
+      const response = await fetch("/users/login", {
         method: "POST",
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Type": "application/json",
         },
-        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
+        body: JSON.stringify({ username, password }),
       });
 
       if (!response.ok) {
@@ -165,17 +165,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       const data = await response.json();
-      setToken(data.access_token);
+      setToken(data.accessToken);
       setUsername(username);
-      setCookie("authToken", data.access_token, 1); // 1 day for access token
-      setCookie("refreshToken", data.refresh_token, 30); // 30 days for refresh token
+      setCookie("authToken", data.accessToken, 1); // 1 day for access token
+      setCookie("refreshToken", data.refreshToken, 30); // 30 days for refresh token
       setCookie("username", username, 30);
       
       // ALWAYS fetch admin status from server - NEVER store in cookie
       try {
-        const userResponse = await fetch("/api/user/info", {
+        const userResponse = await fetch("/users/info", {
           headers: {
-            Authorization: `Bearer ${data.access_token}`,
+            Authorization: `Bearer ${data.accessToken}`,
           },
         });
         
@@ -210,7 +210,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = async (username: string, password: string) => {
     setError(null);
     try {
-      const response = await fetch("/api/register", {
+      const response = await fetch("/users/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -220,7 +220,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || "Registration failed");
+        throw new Error(errorData.error || "Registration failed");
       }
 
       // Auto-login after registration (will handle redirect)
@@ -236,14 +236,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Try to revoke refresh token on server
     try {
       const refreshToken = getCookie("refreshToken");
-      if (token) {
-        await fetch("/api/logout", {
-          method: "POST",
+      if (refreshToken) {
+        await fetch("/users/logout", {
+          method: "DELETE",
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ refresh_token: refreshToken }),
+          body: JSON.stringify({ token: refreshToken }),
         });
       }
     } catch (err) {

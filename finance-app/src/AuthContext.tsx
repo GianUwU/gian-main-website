@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       // THEN fetch admin status from server asynchronously
       // Even if this fails, user remains authenticated
-      fetch("/user/info", {
+      fetch("/users/info", {
         headers: {
           Authorization: `Bearer ${savedToken}`,
         },
@@ -103,12 +103,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           throw new Error("No refresh token available");
         }
 
-        const response = await fetch("/refresh", {
+        const response = await fetch("/token", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ refresh_token: savedRefreshToken }),
+          body: JSON.stringify({ token: savedRefreshToken }),
         });
 
         if (!response.ok) {
@@ -116,14 +116,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         const data = await response.json();
-        const newToken = data.access_token;
+        const newToken = data.accessToken;
         setToken(newToken);
         setCookie("authToken", newToken, 1); // 1 day for access token
         console.log("✅ Token refreshed successfully");
         
         // ALWAYS re-fetch admin status after token refresh from server
         try {
-          const userResponse = await fetch("/user/info", {
+          const userResponse = await fetch("/users/info", {
             headers: {
               Authorization: `Bearer ${newToken}`,
             },
@@ -157,27 +157,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (_username: string, _password: string) => {
     // Redirect to main login page with redirect URL
     const redirectUrl = encodeURIComponent(window.location.origin + window.location.pathname);
-    window.location.href = `https://gian.ink/login?redirect=${redirectUrl}`;
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const mainAppUrl = isLocalhost ? 'http://localhost:5173' : 'https://gian.ink';
+    window.location.href = `${mainAppUrl}/login?redirect=${redirectUrl}`;
   };
 
   const register = async (_username: string, _password: string) => {
     // Redirect to main login page with redirect URL
     const redirectUrl = encodeURIComponent(window.location.origin + window.location.pathname);
-    window.location.href = `https://gian.ink/login?redirect=${redirectUrl}`;
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const mainAppUrl = isLocalhost ? 'http://localhost:5173' : 'https://gian.ink';
+    window.location.href = `${mainAppUrl}/login?redirect=${redirectUrl}`;
   };
 
   const logout = async () => {
     // Try to revoke refresh token on server
     try {
       const refreshToken = getCookie("refreshToken");
-      if (token) {
-        await fetch("/logout", {
-          method: "POST",
+      if (refreshToken) {
+        await fetch("/users/logout", {
+          method: "DELETE",
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ refresh_token: refreshToken }),
+          body: JSON.stringify({ token: refreshToken }),
         });
       }
     } catch (err) {

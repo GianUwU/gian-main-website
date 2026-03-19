@@ -3,6 +3,8 @@ import Login from './components/Login'
 
 function App() {
   const path = window.location.pathname
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  const financeUrl = isLocalhost ? 'http://localhost:5175' : 'https://finance.gian.ink'
 
   // Route handlers
   const isLoginRoute = path === '/login' || path === '/login/'
@@ -22,7 +24,7 @@ function App() {
         <div className="apps-section">
           <h2>My Projects</h2>
           <div className="apps-links">
-            <a href="https://finance.gian.ink" className="app-link">
+            <a href={financeUrl} className="app-link">
               <span className="app-icon">💰</span>
               <h3>Finance Tracker</h3>
             </a>

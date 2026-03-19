@@ -2,7 +2,7 @@
 # update_frontend_main.sh - Build and deploy main-app to gian.ink
 
 # Navigate to the main-app directory
-cd ~/gian-webserver/main-app/ || exit
+cd ~/webserver/main-app/ || exit
 
 npm run build
 

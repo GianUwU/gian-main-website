@@ -2,7 +2,7 @@
 # update_frontend_drop.sh - Build and deploy drop-app to drop.gian.ink
 
 # Navigate to the drop-app directory
-cd ~/gian-webserver/drop-app/ || exit
+cd ~/webserver/drop-app/ || exit
 
 npm run build
 

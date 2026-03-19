@@ -5,7 +5,6 @@ import UserBadge from './components/UserBadge'
 import FileDetail from './components/FileDetail'
 import FileUpload from './components/FileUpload'
 import FileList from './components/FileList'
-import BackendStatusIndicator from './components/BackendStatusIndicator'
 import { useFileList } from './hooks/useFileList'
 
 function App() {
@@ -35,7 +34,7 @@ function App() {
   // Instant download route
   if (downloadMatch) {
     const fileId = downloadMatch[1]
-    window.location.href = `/api/files/${fileId}/now`
+    window.location.href = `/files/${fileId}/now`
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         Downloading...
@@ -70,8 +69,6 @@ function App() {
         onSwitchView={switchView}
         onDeleteFile={removeFile}
       />
-      
-      <BackendStatusIndicator />
     </div>
   )
 }

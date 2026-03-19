@@ -173,7 +173,7 @@ export const useFileUpload = (): UseFileUploadResult => {
           reject(new Error('Upload failed due to network error'))
         })
 
-        xhr.open('POST', '/api/upload')
+        xhr.open('POST', '/upload')
         xhr.responseType = 'json'
         xhr.withCredentials = true
         xhr.send(formData)

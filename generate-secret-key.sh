@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Script to generate a secure SECRET_KEY for production deployment
+# Script to generate secure JWT secrets for NodeJsBackend
 
-echo "🔐 Generating Secure SECRET_KEY for JWT"
+echo "🔐 Generating JWT secrets for NodeJsBackend"
 echo "========================================"
 echo ""
 
@@ -13,15 +13,18 @@ if ! command -v python3 &> /dev/null; then
 fi
 
 # Generate the key
-SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+ACCESS_TOKEN_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+REFRESH_TOKEN_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
 
-echo "✅ Generated secure SECRET_KEY:"
+echo "✅ Generated secrets:"
 echo ""
-echo "    $SECRET_KEY"
+echo "ACCESS_TOKEN_SECRET=$ACCESS_TOKEN_SECRET"
+echo "REFRESH_TOKEN_SECRET=$REFRESH_TOKEN_SECRET"
 echo ""
-echo "📝 Copy this and replace the SECRET_KEY in PythonBackend/finance.py:"
+echo "📝 Add these to NodeJsBackend/.env on your server:"
 echo ""
-echo "    SECRET_KEY = \"$SECRET_KEY\""
+echo "ACCESS_TOKEN_SECRET=$ACCESS_TOKEN_SECRET"
+echo "REFRESH_TOKEN_SECRET=$REFRESH_TOKEN_SECRET"
 echo ""
 echo "⚠️  IMPORTANT:"
 echo "   - Keep this key secret and secure!"

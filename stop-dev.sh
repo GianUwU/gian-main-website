@@ -25,9 +25,9 @@ if [ -f /tmp/flavia-app-dev.pid ]; then
     rm /tmp/flavia-app-dev.pid
 fi
 
-echo "Stopping backend services..."
-cd PythonBackend
-docker-compose down
+echo "Stopping Node backends..."
+cd NodeJsBackend
+docker compose down
 cd ..
 
 echo "All services stopped."

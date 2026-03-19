@@ -1,3 +1,5 @@
+limit_req_zone $binary_remote_addr zone=bitwarden_proxy_limit:10m rate=20r/s;
+
 server {
     listen 80;
     server_name bitwarden.gian.ink;
@@ -21,6 +23,8 @@ server {
     server_tokens off;
 
     location / {
+        limit_req zone=bitwarden_proxy_limit burst=80 nodelay;
+
         proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
