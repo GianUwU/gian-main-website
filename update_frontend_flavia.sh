@@ -2,7 +2,7 @@
 # update_frontend_flavia.sh - Build and deploy flavia-app to server
 
 # Navigate to the flavia-app directory
-cd ~/gian-webserver/flavia-app/ || exit
+cd ~/webserver/flavia-app/ || exit
 
 npm run build
 

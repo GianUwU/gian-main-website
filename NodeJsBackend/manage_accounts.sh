@@ -1,9 +1,11 @@
 #!/bin/bash
 # manage_accounts.sh - User account management script for the authentication system
 
-DB_PATH="Databases/auth.db"
-FINANCE_DB_PATH="Databases/finance.db"
-DROP_DB_PATH="Databases/drop_files.db"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+DB_PATH="$SCRIPT_DIR/Databases/auth.db"
+FINANCE_DB_PATH="$SCRIPT_DIR/Databases/finance.db"
+DROP_DB_PATH="$SCRIPT_DIR/Databases/drop_files.db"
 
 # Check if database exists
 if [ ! -f "$DB_PATH" ]; then
@@ -11,9 +13,34 @@ if [ ! -f "$DB_PATH" ]; then
     exit 1
 fi
 
-# Function to hash password (SHA256)
+# Verify the stored hash is bcrypt format
+is_bcrypt_hash() {
+    case "$1" in
+        '$2a$'*|'$2b$'*|'$2y$'*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+# Function to hash password (bcrypt via Node.js)
 hash_password() {
-    echo -n "$1" | sha256sum | awk '{print $1}'
+        local plaintext_password="$1"
+
+    HASH_INPUT="$plaintext_password" BACKEND_DIR="$SCRIPT_DIR" node -e "
+const { createRequire } = require('module');
+const path = require('path');
+const requireFromBackend = createRequire(path.join(process.env.BACKEND_DIR, 'package.json'));
+const bcrypt = requireFromBackend('bcrypt');
+const input = process.env.HASH_INPUT;
+if (typeof input !== 'string' || input.length === 0) {
+    console.error('Error: Empty password input.');
+    process.exit(1);
+}
+process.stdout.write(bcrypt.hashSync(input, 10));
+"
 }
 
 # Function to list all users
@@ -45,7 +72,7 @@ delete_user() {
     read -p "Enter username to delete: " username
     
     # Check if user exists
-    user_exists=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM users WHERE username = '$username';")
+    user_exists=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM users WHERE lower(username) = lower('$username');")
     
     if [ "$user_exists" -eq 0 ]; then
         echo "Error: User '$username' not found!"
@@ -76,7 +103,7 @@ reset_password() {
     read -p "Enter username: " username
     
     # Check if user exists
-    user_exists=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM users WHERE username = '$username';")
+    user_exists=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM users WHERE lower(username) = lower('$username');")
     
     if [ "$user_exists" -eq 0 ]; then
         echo "Error: User '$username' not found!"
@@ -101,18 +128,25 @@ reset_password() {
     
     # Hash the password
     hashed_password=$(hash_password "$password")
+
+    if [ $? -ne 0 ] || [ -z "$hashed_password" ]; then
+        echo "Error: Failed to hash password. Ensure Node.js dependencies are installed (npm install)."
+        return 1
+    fi
     
     # Update password and revoke all refresh tokens for security
     sqlite3 "$DB_PATH" <<EOF
-UPDATE users SET password = '$hashed_password' WHERE username = '$username';
-DELETE FROM refresh_tokens WHERE user_id = (SELECT id FROM users WHERE username = '$username');
+UPDATE users SET password = '$hashed_password' WHERE lower(username) = lower('$username');
+DELETE FROM refresh_tokens WHERE user_id = (SELECT id FROM users WHERE lower(username) = lower('$username'));
 EOF
-    
-    if [ $? -eq 0 ]; then
+
+    updated_hash=$(sqlite3 "$DB_PATH" "SELECT password FROM users WHERE lower(username) = lower('$username') LIMIT 1;")
+
+    if [ $? -eq 0 ] && is_bcrypt_hash "$updated_hash"; then
         echo "✓ Password reset successfully for user '$username'."
         echo "  All active sessions have been invalidated."
     else
-        echo "Error: Failed to reset password."
+        echo "Error: Failed to reset password or stored hash is not bcrypt."
         return 1
     fi
 }
@@ -122,7 +156,7 @@ create_user() {
     read -p "Enter new username: " username
     
     # Check if username already exists
-    user_exists=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM users WHERE username = '$username';")
+    user_exists=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM users WHERE lower(username) = lower('$username');")
     
     if [ "$user_exists" -gt 0 ]; then
         echo "Error: User '$username' already exists!"
@@ -154,14 +188,21 @@ create_user() {
     
     # Hash the password
     hashed_password=$(hash_password "$password")
+
+    if [ $? -ne 0 ] || [ -z "$hashed_password" ]; then
+        echo "Error: Failed to hash password. Ensure Node.js dependencies are installed (npm install)."
+        return 1
+    fi
     
     # Create user
     sqlite3 "$DB_PATH" "INSERT INTO users (username, password, is_admin) VALUES ('$username', '$hashed_password', $admin_flag);"
-    
-    if [ $? -eq 0 ]; then
+
+    created_hash=$(sqlite3 "$DB_PATH" "SELECT password FROM users WHERE lower(username) = lower('$username') LIMIT 1;")
+
+    if [ $? -eq 0 ] && is_bcrypt_hash "$created_hash"; then
         echo "✓ User '$username' created successfully."
     else
-        echo "Error: Failed to create user."
+        echo "Error: Failed to create user or stored hash is not bcrypt."
         return 1
     fi
 }
