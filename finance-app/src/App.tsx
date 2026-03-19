@@ -11,14 +11,13 @@ function App() {
   // Double-check cookies before redirecting
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      // Give it a moment and double-check cookies
-      const hasAuthCookies = getCookie("authToken") && getCookie("refreshToken") && getCookie("username");
-      if (!hasAuthCookies) {
-        console.log("No auth cookies found, redirecting to login");
+      // Redirect only if there is no refresh token to recover the session.
+      const hasRefreshToken = !!getCookie("refreshToken");
+      if (!hasRefreshToken) {
+        console.log("No refresh token cookie found, redirecting to login");
         setShouldRedirect(true);
       } else {
-        console.log("Auth cookies exist but isAuthenticated is false - this shouldn't happen now");
-        // Don't redirect if cookies exist - auth state should sync momentarily
+        console.log("Refresh token exists but isAuthenticated is false - waiting for auth sync");
       }
     }
   }, [isLoading, isAuthenticated]);
