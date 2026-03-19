@@ -1,16 +1,18 @@
 #!/bin/bash
-# update_backend.sh - Deploy Python backend files to server
+# update_backend.sh - Deploy Dockerized Node backends to server
 
-cd ~/gian-webserver/PythonBackend/ || exit
+cd ~/webserver/NodeJsBackend/ || exit
 
-echo "Copying backend files..."
+echo "Copying Node backend files..."
 
-# Copy all necessary backend files to the server
-scp main.py drop.py finance.py auth.py requirements.txt Dockerfile docker-compose.yml .dockerignore manage_accounts.sh gian@gian.ink:~/PythonBackend/
+ssh gian@gian.ink 'mkdir -p ~/NodeJsBackend/Databases ~/NodeJsBackend/uploads'
 
-echo "Restarting backend services..."
+# Copy all necessary Node backend files to the server
+scp authServer.js financeServer.js dropServer.js db.js package.json package-lock.json Dockerfile docker-compose.yml .dockerignore .env.example manage_accounts.sh gian@gian.ink:~/NodeJsBackend/
 
-# Restart all backend services on the server
-ssh gian@gian.ink 'cd ~/PythonBackend && docker compose down && docker compose up --build -d'
+echo "Restarting Node backend services..."
 
-echo "Backend services updated."
+# Restart Node backend services on the server
+ssh gian@gian.ink 'cd ~/NodeJsBackend && docker compose down && docker compose up --build -d'
+
+echo "Node backend services updated."

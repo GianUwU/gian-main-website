@@ -1,0 +1,286 @@
+#!/bin/bash
+# manage_accounts.sh - User account management script for the authentication system
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+DB_PATH="$SCRIPT_DIR/Databases/auth.db"
+FINANCE_DB_PATH="$SCRIPT_DIR/Databases/finance.db"
+DROP_DB_PATH="$SCRIPT_DIR/Databases/drop_files.db"
+
+# Check if database exists
+if [ ! -f "$DB_PATH" ]; then
+    echo "Error: Database $DB_PATH not found!"
+    exit 1
+fi
+
+# Verify the stored hash is bcrypt format
+is_bcrypt_hash() {
+    case "$1" in
+        '$2a$'*|'$2b$'*|'$2y$'*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+# Function to hash password (bcrypt via Node.js)
+hash_password() {
+        local plaintext_password="$1"
+
+    HASH_INPUT="$plaintext_password" BACKEND_DIR="$SCRIPT_DIR" node -e "
+const { createRequire } = require('module');
+const path = require('path');
+const requireFromBackend = createRequire(path.join(process.env.BACKEND_DIR, 'package.json'));
+const bcrypt = requireFromBackend('bcrypt');
+const input = process.env.HASH_INPUT;
+if (typeof input !== 'string' || input.length === 0) {
+    console.error('Error: Empty password input.');
+    process.exit(1);
+}
+process.stdout.write(bcrypt.hashSync(input, 10));
+"
+}
+
+# Function to list all users
+list_users() {
+    echo "=== All Users ==="
+    
+    # Get all users from auth database
+    sqlite3 "$DB_PATH" "SELECT id, username, CASE WHEN is_admin = 1 THEN 'Yes' ELSE 'No' END as admin, created_at FROM users ORDER BY username;" | while IFS='|' read -r user_id username admin created_at; do
+        # Count transactions from finance database
+        transaction_count=0
+        if [ -f "$FINANCE_DB_PATH" ]; then
+            transaction_count=$(sqlite3 "$FINANCE_DB_PATH" "SELECT COUNT(*) FROM transactions WHERE user_id = $user_id;" 2>/dev/null || echo "0")
+        fi
+        
+        # Count files from drop database
+        file_count=0
+        if [ -f "$DROP_DB_PATH" ]; then
+            file_count=$(sqlite3 "$DROP_DB_PATH" "SELECT COUNT(*) FROM files WHERE user_id = $user_id;" 2>/dev/null || echo "0")
+        fi
+        
+        # Format and display the user info
+        printf "%-4s | %-20s | Admin: %-3s | Transactions: %-4s | Files: %-4s | Created: %s\n" \
+            "$user_id" "$username" "$admin" "$transaction_count" "$file_count" "$created_at"
+    done
+}
+
+# Function to delete a user
+delete_user() {
+    read -p "Enter username to delete: " username
+    
+    # Check if user exists
+    user_exists=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM users WHERE lower(username) = lower('$username');")
+    
+    if [ "$user_exists" -eq 0 ]; then
+        echo "Error: User '$username' not found!"
+        return 1
+    fi
+    
+    # Confirm deletion
+    read -p "Are you sure you want to delete user '$username'? (yes/no): " confirm
+    
+    if [ "$confirm" != "yes" ]; then
+        echo "Deletion cancelled."
+        return 0
+    fi
+    
+    # Delete user (cascade will delete refresh tokens)
+    sqlite3 "$DB_PATH" "DELETE FROM users WHERE username = '$username';"
+    
+    if [ $? -eq 0 ]; then
+        echo "✓ User '$username' deleted successfully."
+    else
+        echo "Error: Failed to delete user '$username'."
+        return 1
+    fi
+}
+
+# Function to reset password
+reset_password() {
+    read -p "Enter username: " username
+    
+    # Check if user exists
+    user_exists=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM users WHERE lower(username) = lower('$username');")
+    
+    if [ "$user_exists" -eq 0 ]; then
+        echo "Error: User '$username' not found!"
+        return 1
+    fi
+    
+    # Get new password
+    read -sp "Enter new password: " password
+    echo
+    read -sp "Confirm new password: " password_confirm
+    echo
+    
+    if [ "$password" != "$password_confirm" ]; then
+        echo "Error: Passwords do not match!"
+        return 1
+    fi
+    
+    if [ -z "$password" ]; then
+        echo "Error: Password cannot be empty!"
+        return 1
+    fi
+    
+    # Hash the password
+    hashed_password=$(hash_password "$password")
+
+    if [ $? -ne 0 ] || [ -z "$hashed_password" ]; then
+        echo "Error: Failed to hash password. Ensure Node.js dependencies are installed (npm install)."
+        return 1
+    fi
+    
+    # Update password and revoke all refresh tokens for security
+    sqlite3 "$DB_PATH" <<EOF
+UPDATE users SET password = '$hashed_password' WHERE lower(username) = lower('$username');
+DELETE FROM refresh_tokens WHERE user_id = (SELECT id FROM users WHERE lower(username) = lower('$username'));
+EOF
+
+    updated_hash=$(sqlite3 "$DB_PATH" "SELECT password FROM users WHERE lower(username) = lower('$username') LIMIT 1;")
+
+    if [ $? -eq 0 ] && is_bcrypt_hash "$updated_hash"; then
+        echo "✓ Password reset successfully for user '$username'."
+        echo "  All active sessions have been invalidated."
+    else
+        echo "Error: Failed to reset password or stored hash is not bcrypt."
+        return 1
+    fi
+}
+
+# Function to create a new user
+create_user() {
+    read -p "Enter new username: " username
+    
+    # Check if username already exists
+    user_exists=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM users WHERE lower(username) = lower('$username');")
+    
+    if [ "$user_exists" -gt 0 ]; then
+        echo "Error: User '$username' already exists!"
+        return 1
+    fi
+    
+    # Get password
+    read -sp "Enter password: " password
+    echo
+    read -sp "Confirm password: " password_confirm
+    echo
+    
+    if [ "$password" != "$password_confirm" ]; then
+        echo "Error: Passwords do not match!"
+        return 1
+    fi
+    
+    if [ -z "$password" ]; then
+        echo "Error: Password cannot be empty!"
+        return 1
+    fi
+    
+    # Ask if admin
+    read -p "Make this user an admin? (yes/no): " is_admin
+    admin_flag=0
+    if [ "$is_admin" = "yes" ]; then
+        admin_flag=1
+    fi
+    
+    # Hash the password
+    hashed_password=$(hash_password "$password")
+
+    if [ $? -ne 0 ] || [ -z "$hashed_password" ]; then
+        echo "Error: Failed to hash password. Ensure Node.js dependencies are installed (npm install)."
+        return 1
+    fi
+    
+    # Create user
+    sqlite3 "$DB_PATH" "INSERT INTO users (username, password, is_admin) VALUES ('$username', '$hashed_password', $admin_flag);"
+
+    created_hash=$(sqlite3 "$DB_PATH" "SELECT password FROM users WHERE lower(username) = lower('$username') LIMIT 1;")
+
+    if [ $? -eq 0 ] && is_bcrypt_hash "$created_hash"; then
+        echo "✓ User '$username' created successfully."
+    else
+        echo "Error: Failed to create user or stored hash is not bcrypt."
+        return 1
+    fi
+}
+
+# Function to toggle admin status
+toggle_admin() {
+    read -p "Enter username: " username
+    
+    # Check if user exists and get current admin status
+    result=$(sqlite3 "$DB_PATH" "SELECT id, COALESCE(is_admin, 0) FROM users WHERE username = '$username';")
+    
+    if [ -z "$result" ]; then
+        echo "Error: User '$username' not found!"
+        return 1
+    fi
+    
+    user_id=$(echo "$result" | cut -d'|' -f1)
+    current_admin=$(echo "$result" | cut -d'|' -f2)
+    
+    # Toggle admin status
+    new_admin=$((1 - current_admin))
+    
+    sqlite3 "$DB_PATH" "UPDATE users SET is_admin = $new_admin WHERE id = $user_id;"
+    
+    if [ $? -eq 0 ]; then
+        if [ "$new_admin" -eq 1 ]; then
+            echo "✓ User '$username' is now an admin."
+        else
+            echo "✓ User '$username' is no longer an admin."
+        fi
+    else
+        echo "Error: Failed to update admin status."
+        return 1
+    fi
+}
+
+# Main menu
+show_menu() {
+    echo ""
+    echo "========================================"
+    echo "  User Account Management"
+    echo "========================================"
+    echo "1. List all users"
+    echo "2. Create new user"
+    echo "3. Reset password"
+    echo "4. Delete user"
+    echo "5. Toggle admin status"
+    echo "6. Exit"
+    echo "========================================"
+    read -p "Select an option (1-6): " choice
+    
+    case $choice in
+        1)
+            list_users
+            ;;
+        2)
+            create_user
+            ;;
+        3)
+            reset_password
+            ;;
+        4)
+            delete_user
+            ;;
+        5)
+            toggle_admin
+            ;;
+        6)
+            echo "Goodbye!"
+            exit 0
+            ;;
+        *)
+            echo "Invalid option. Please try again."
+            ;;
+    esac
+}
+
+# Main loop
+while true; do
+    show_menu
+done

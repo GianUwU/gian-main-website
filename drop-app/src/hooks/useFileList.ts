@@ -20,11 +20,11 @@ export const useFileList = () => {
     setLoading(true)
 
     try {
-      let endpoint = `/api/files?offset=${offset}&limit=${limit}`
+      let endpoint = `/files?offset=${offset}&limit=${limit}`
       if (viewMode === 'my') {
-        endpoint = `/api/my-files?offset=${offset}&limit=${limit}`
+        endpoint = `/files/my?offset=${offset}&limit=${limit}`
       } else if (viewMode === 'all') {
-        endpoint = `/api/all-files?offset=${offset}&limit=${limit}`
+        endpoint = `/files/all?offset=${offset}&limit=${limit}`
       }
 
       const res = await fetch(endpoint, { credentials: 'include' })

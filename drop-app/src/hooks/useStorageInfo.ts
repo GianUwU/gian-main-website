@@ -10,7 +10,7 @@ export const useStorageInfo = () => {
 
   const loadStorageInfo = async () => {
     try {
-      const res = await fetch('/api/storage-info')
+      const res = await fetch('/storage-info')
       const data = await res.json()
       setStorageInfo(data)
     } catch (e) {

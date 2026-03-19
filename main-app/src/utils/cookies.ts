@@ -55,9 +55,3 @@ export function deleteCookie(name: string) {
   
   document.cookie = cookieAttributes.join('; ');
 }
-
-// Clean up any legacy isAdmin cookies (migration helper)
-export function cleanupLegacyCookies() {
-  deleteCookie('isAdmin');
-  console.log('🧹 Cleaned up legacy isAdmin cookie');
-}

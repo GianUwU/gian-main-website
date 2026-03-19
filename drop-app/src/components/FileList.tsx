@@ -35,7 +35,7 @@ export default function FileList({
     if (!deleteConfirm) return
 
     try {
-      const response = await fetch(`/api/files/${deleteConfirm.id}`, {
+      const response = await fetch(`/files/${deleteConfirm.id}`, {
         method: 'DELETE',
         credentials: 'include'
       })

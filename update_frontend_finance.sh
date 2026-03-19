@@ -2,7 +2,7 @@
 # update_frontend_finance.sh - Build and deploy finance-app to server
 
 # Navigate to your React app
-cd ~/gian-webserver/finance-app/ || exit
+cd ~/webserver/finance-app/ || exit
 
 # Build the React app
 npm run build
