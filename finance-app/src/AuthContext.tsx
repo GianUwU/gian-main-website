@@ -40,44 +40,82 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       allCookies: document.cookie
     });
     
-    if (savedToken && savedRefreshToken && savedUsername) {
-      // CRITICAL FIX: Set token and username IMMEDIATELY in state
-      // This must happen synchronously BEFORE any async operations
-      setToken(savedToken);
-      setUsername(savedUsername);
-      console.log("✅ Set auth state from cookies - user is authenticated");
-      
-      // THEN fetch admin status from server asynchronously
-      // Even if this fails, user remains authenticated
-      fetch("/users/info", {
-        headers: {
-          Authorization: `Bearer ${savedToken}`,
-        },
-      })
-        .then(res => {
-          if (res.ok) {
-            return res.json();
-          } else {
+    if (savedRefreshToken) {
+      if (savedUsername) {
+        setUsername(savedUsername);
+      }
+
+      const loadUserInfo = (accessToken: string) => {
+        fetch("/users/info", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        })
+          .then(res => {
+            if (res.ok) {
+              return res.json();
+            }
             console.warn("⚠️ Failed to get user info, status:", res.status);
             return null;
-          }
-        })
-        .then(userInfo => {
-          if (userInfo) {
-            const adminStatus = userInfo.is_admin || false;
-            setIsAdmin(adminStatus);
-            console.log("✅ Admin status from server:", adminStatus);
-          } else {
+          })
+          .then(userInfo => {
+            if (userInfo) {
+              if (userInfo.username) {
+                setUsername(userInfo.username);
+              }
+              const adminStatus = userInfo.is_admin || false;
+              setIsAdmin(adminStatus);
+              console.log("✅ Admin status from server:", adminStatus);
+            } else {
+              setIsAdmin(false);
+              console.warn("⚠️ Failed to get admin status - defaulting to false");
+            }
+            setIsLoading(false);
+          })
+          .catch(err => {
+            console.warn("❌ Failed to verify admin status:", err);
             setIsAdmin(false);
-            console.warn("⚠️ Failed to get admin status - defaulting to false");
-          }
-          setIsLoading(false);
+            setIsLoading(false);
+          });
+      };
+
+      if (savedToken) {
+        setToken(savedToken);
+        console.log("✅ Set auth state from cookies - user is authenticated");
+        loadUserInfo(savedToken);
+      } else {
+        console.log("🔄 Missing access token cookie, attempting silent refresh");
+        fetch("/token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token: savedRefreshToken }),
         })
-        .catch(err => {
-          console.warn("❌ Failed to verify admin status:", err);
-          setIsAdmin(false);
-          setIsLoading(false);
-        });
+          .then(res => {
+            if (!res.ok) {
+              throw new Error("Token refresh failed during bootstrap");
+            }
+            return res.json();
+          })
+          .then(data => {
+            const newToken = data.accessToken;
+            if (!newToken) {
+              throw new Error("No access token returned during bootstrap");
+            }
+            setToken(newToken);
+            setCookie("authToken", newToken, 1);
+            console.log("✅ Bootstrapped new access token from refresh token");
+            loadUserInfo(newToken);
+          })
+          .catch(err => {
+            console.warn("❌ Bootstrap refresh failed, user not authenticated:", err);
+            setToken(null);
+            setUsername(null);
+            setIsAdmin(false);
+            setIsLoading(false);
+          });
+      }
     } else {
       console.log("❌ Missing auth cookies - user not authenticated");
       setIsLoading(false);

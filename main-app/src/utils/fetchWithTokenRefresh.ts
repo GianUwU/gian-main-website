@@ -12,6 +12,10 @@ export function setRefreshTokenFunction(fn: () => Promise<void>) {
   refreshTokenFunction = fn;
 }
 
+function isAuthStatus(status: number): boolean {
+  return status === 401 || status === 403;
+}
+
 export async function fetchWithTokenRefresh(
   url: string,
   options: RequestInit = {}
@@ -31,9 +35,9 @@ export async function fetchWithTokenRefresh(
     credentials: 'include',
   });
 
-  // If we get a 401 and have a refresh function, try refreshing the token
-  if (response.status === 401 && refreshTokenFunction) {
-    console.log("🔄 Got 401, attempting token refresh...");
+  // If we get an auth error and have a refresh function, try refreshing the token.
+  if (isAuthStatus(response.status) && refreshTokenFunction) {
+    console.log("🔄 Got auth error, attempting token refresh...");
     
     try {
       // Attempt to refresh the token
@@ -58,7 +62,7 @@ export async function fetchWithTokenRefresh(
       console.log("✅ Request retried successfully after token refresh");
     } catch (error) {
       console.error("❌ Token refresh failed:", error);
-      // Let the 401 response be returned
+      // Let the original auth-error response be returned
     }
   }
 
