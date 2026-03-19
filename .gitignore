@@ -1,55 +1,117 @@
+# ===========================================
 # Python
+# ===========================================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-*.db
-node_modules/
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
 
+# ===========================================
 # Node
+# ===========================================
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 package-lock.json
 
-# Build outputs
+# ===========================================
+# Build outputs (all frontends)
+# ===========================================
 dist/
 build/
-*.egg-info/
+.next/
+out/
 
-# IDEs
+# ===========================================
+# IDEs and Editors
+# ===========================================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+*.sublime-project
+*.sublime-workspace
 
+# ===========================================
 # OS
+# ===========================================
 .DS_Store
 Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 
-# Environment
+# ===========================================
+# Environment Variables
+# ===========================================
 .env
 .env.local
 .env.*.local
+.env.production.local
 
+# ===========================================
 # Logs
+# ===========================================
 *.log
 logs/
+npm-debug.log*
+yarn-debug.log*
 
-# Cache
+# ===========================================
+# Cache and Temporary Files
+# ===========================================
 .cache/
 .vite/
-.pytest_cache/
+.turbo/
+.dist/
 
-/NodeJsBackend/Databases/
+# ===========================================
+# Databases (SQLite, etc.) - DO NOT COMMIT
+# ===========================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
 
-# Uploads (if you want to ignore user uploads)
-# uploads/
+# Backend Database Files
+NodeJsBackend/Databases/
+NodeJsBackend/auth.db
+NodeJsBackend/drop_files.db
+NodeJsBackend/finance.db
+PythonBackend/auth.db
+PythonBackend/drop_files.db
+PythonBackend/finance.db
+PythonBackend/tasks.db/
 
-# Databases (uncomment if you don't want to track local DBs)
-# *.db
-# *.sqlite
-# *.sqlite3
+# ===========================================
+# User Uploads - DO NOT COMMIT
+# ===========================================
+NodeJsBackend/uploads/
+PythonBackend/uploads/
+*/uploads/
+uploads/
+
+# ===========================================
+# Development & Debug Files
+# ===========================================
+examplerequests.rest
+manage_accounts.sh
+Commands.txt
+
+# ===========================================
+# Docker Build Artifacts (in dev)
+# ===========================================
+docker-compose.override.yml
