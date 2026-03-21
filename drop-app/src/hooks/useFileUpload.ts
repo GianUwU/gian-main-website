@@ -4,6 +4,7 @@
 
 import { useState, useCallback } from 'react'
 import { useAuth } from '../AuthContext'
+import { getCookie } from '../utils/cookies'
 import type { FileInfo } from '../types'
 
 interface UseFileUploadResult {
@@ -34,7 +35,7 @@ interface UseFileUploadResult {
 const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024 // 5GB
 
 export const useFileUpload = (): UseFileUploadResult => {
-  const { isAuthenticated, isAdmin } = useAuth()
+  const { isAuthenticated, isAdmin, refreshToken } = useAuth()
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [description, setDescription] = useState<string>('')
   const [isPrivate, setIsPrivate] = useState<boolean>(false)
@@ -151,7 +152,7 @@ export const useFileUpload = (): UseFileUploadResult => {
     }
 
     try {
-      await new Promise((resolve, reject) => {
+      const uploadWithToken = (authToken: string | null) => new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest()
 
         xhr.upload.addEventListener('progress', (e) => {
@@ -165,7 +166,10 @@ export const useFileUpload = (): UseFileUploadResult => {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve(xhr.response)
           } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`))
+            const error = new Error(`Upload failed with status ${xhr.status}`) as Error & { status?: number; response?: unknown }
+            error.status = xhr.status
+            error.response = xhr.response
+            reject(error)
           }
         })
 
@@ -176,28 +180,44 @@ export const useFileUpload = (): UseFileUploadResult => {
         xhr.open('POST', '/upload')
         xhr.responseType = 'json'
         xhr.withCredentials = true
-        xhr.send(formData)
-      }).then((response: any) => {
-        const result = response
-
-        if (result && result.status === 'ok') {
-          setSelectedFiles([])
-          setDescription('')
-          setIsPrivate(false)
-          setExpirationDays(isAdmin ? null : 7)
-          
-          if (onSuccess && !result.file.is_private) {
-            onSuccess(result.file)
-          }
-          
-          const fileLink = `${window.location.origin}/view/${result.file.id}`
-          const fileCount = result.file.total_files || 1
-          const successMsg = fileCount > 1 ? `${fileCount} files uploaded!` : 'Upload successful!'
-          setStatus(`success:${fileLink}:${successMsg}`)
-        } else {
-          setStatus(`Error: ${result?.detail || 'Something went wrong'}`)
+        if (authToken) {
+          xhr.setRequestHeader('Authorization', `Bearer ${authToken}`)
         }
+        xhr.send(formData)
       })
+
+      let response: unknown
+      try {
+        response = await uploadWithToken(getCookie('authToken'))
+      } catch (err) {
+        const status = (err as { status?: number })?.status
+        if (status === 401 || status === 403) {
+          await refreshToken()
+          response = await uploadWithToken(getCookie('authToken'))
+        } else {
+          throw err
+        }
+      }
+
+      const result = response as any
+
+      if (result && result.status === 'ok') {
+        setSelectedFiles([])
+        setDescription('')
+        setIsPrivate(false)
+        setExpirationDays(isAdmin ? null : 7)
+
+        if (onSuccess && !result.file.is_private) {
+          onSuccess(result.file)
+        }
+
+        const fileLink = `${window.location.origin}/view/${result.file.id}`
+        const fileCount = result.file.total_files || 1
+        const successMsg = fileCount > 1 ? `${fileCount} files uploaded!` : 'Upload successful!'
+        setStatus(`success:${fileLink}:${successMsg}`)
+      } else {
+        setStatus(`Error: ${result?.detail || 'Something went wrong'}`)
+      }
     } catch (err) {
       console.error(err)
       setStatus('Upload failed. Check console for details.')
@@ -206,7 +226,7 @@ export const useFileUpload = (): UseFileUploadResult => {
       setUploading(false)
       setTimeout(() => setUploadProgress(0), 1000)
     }
-  }, [isAuthenticated, isAdmin, selectedFiles, description, isPrivate, expirationDays])
+  }, [isAuthenticated, isAdmin, refreshToken, selectedFiles, description, isPrivate, expirationDays])
 
   const removeFile = useCallback((index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index))
