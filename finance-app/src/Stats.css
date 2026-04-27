@@ -18,8 +18,8 @@
   top: 20px;
   right: 20px;
   padding: 8px 16px;
-  background: #dc3545;
-  color: white;
+  background: var(--color-dc3545);
+  color: var(--color-fff);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -29,14 +29,14 @@
 }
 
 .logout-button:hover {
-  background: #c82333;
+  background: var(--color-c82333);
 }
 
 .card {
-  background: #fff;
+  background: var(--color-fff);
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 6px var(--color-rgba-black-006);
 }
 
 .card h2 {
@@ -46,20 +46,20 @@
 .stats-total {
   font-size: 28px;
   font-weight: 700;
-  color: #213547;
+  color: var(--color-213547);
 }
 
 .stats-back {
   display: inline-block;
   margin-top: 12px;
   text-decoration: none;
-  color: #fff;
-  background: #333;
+  color: var(--color-fff);
+  background: var(--color-333);
   padding: 8px 12px;
   border-radius: 8px;
 }
 
-.stats-back:hover { background: #000; }
+.stats-back:hover { background: var(--color-000); }
 
 /* year selector */
 .year-selector {
@@ -72,33 +72,33 @@
 
 .year-selector label {
   font-weight: 600;
-  color: #213547;
+  color: var(--color-213547);
 }
 
 .year-selector select {
   padding: 8px 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-ddd);
   border-radius: 6px;
   font-size: 14px;
   font-family: inherit;
   cursor: pointer;
-  background-color: #fff;
+  background-color: var(--color-fff);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .year-selector select:hover {
-  border-color: #999;
+  border-color: var(--color-999);
 }
 
 .year-selector select:focus {
   outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+  border-color: var(--color-4a90e2);
+  box-shadow: 0 0 0 2px var(--color-rgba-focus-010);
 }
 
 .stats-subtitle {
   font-size: 14px;
-  color: #666;
+  color: var(--color-666);
   margin-top: -8px;
 }
 
@@ -130,14 +130,14 @@
 
 .chart-svg { width: 100%; max-width: 680px; height: auto; min-width: 600px; }
 
-.bar { fill: #4a90e2; transition: fill 0.15s; }
-.bar:hover { fill: #357ab8; }
+.bar { fill: var(--color-4a90e2); transition: fill 0.15s; }
+.bar:hover { fill: var(--color-357ab8); }
 
-.bar-label { font-size: 12px; fill: #333; }
+.bar-label { font-size: 12px; fill: var(--color-333); }
 
 .bar-total-label {
   font-size: 11px;
-  fill: #333;
+  fill: var(--color-333);
   font-weight: 600;
 }
 
@@ -145,13 +145,13 @@
 .chart-tooltip {
   position: absolute;
   pointer-events: none;
-  background: rgba(0,0,0,0.85);
-  color: #fff;
+  background: var(--color-rgba-black-085);
+  color: var(--color-fff);
   padding: 8px 10px;
   border-radius: 6px;
   font-size: 13px;
   min-width: 90px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px var(--color-rgba-black-015);
   z-index: 20;
 }
 
@@ -170,7 +170,7 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #333;
+  color: var(--color-333);
 }
 .legend-swatch {
   width: 14px;
@@ -187,7 +187,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--color-rgba-black-050);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -202,13 +202,13 @@
 }
 
 .month-detail-content {
-  background: white;
+  background: var(--color-fff);
   border-radius: 12px;
   max-width: 700px;
   width: 100%;
   max-height: 85vh;
   overflow: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 40px var(--color-rgba-black-020);
   animation: slideUp 0.3s ease-out;
 }
 
@@ -228,10 +228,10 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--color-e0e0e0);
   position: sticky;
   top: 0;
-  background: white;
+  background: var(--color-fff);
   border-radius: 12px 12px 0 0;
   z-index: 10;
 }
@@ -239,7 +239,7 @@
 .month-detail-header h3 {
   margin: 0;
   font-size: 20px;
-  color: #213547;
+  color: var(--color-213547);
 }
 
 .close-button {
@@ -247,7 +247,7 @@
   border: none;
   font-size: 32px;
   line-height: 1;
-  color: #666;
+  color: var(--color-666);
   cursor: pointer;
   padding: 0;
   width: 32px;
@@ -260,8 +260,8 @@
 }
 
 .close-button:hover {
-  background: #f0f0f0;
-  color: #333;
+  background: var(--color-f0f0f0);
+  color: var(--color-333);
 }
 
 .month-detail-body {
@@ -273,7 +273,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: #f8f9fa;
+  background: var(--color-f8f9fa);
   border-radius: 8px;
   margin-bottom: 24px;
 }
@@ -281,13 +281,13 @@
 .month-total-label {
   font-size: 16px;
   font-weight: 600;
-  color: #213547;
+  color: var(--color-213547);
 }
 
 .month-total-amount {
   font-size: 24px;
   font-weight: 700;
-  color: #4a90e2;
+  color: var(--color-4a90e2);
 }
 
 /* Insights Grid */
@@ -299,8 +299,8 @@
 }
 
 .insight-card {
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-  border: 1px solid #e0e0e0;
+  background: linear-gradient(135deg, var(--color-f8f9fa) 0%, var(--color-ffffff) 100%);
+  border: 1px solid var(--color-e0e0e0);
   border-radius: 10px;
   padding: 16px;
   display: flex;
@@ -310,7 +310,7 @@
 
 .insight-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px var(--color-rgba-black-008);
 }
 
 .insight-icon {
@@ -326,7 +326,7 @@
 
 .insight-label {
   font-size: 12px;
-  color: #666;
+  color: var(--color-666);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
@@ -336,21 +336,21 @@
 .insight-value {
   font-size: 20px;
   font-weight: 700;
-  color: #213547;
+  color: var(--color-213547);
   margin-bottom: 2px;
   word-wrap: break-word;
 }
 
 .insight-detail {
   font-size: 12px;
-  color: #888;
+  color: var(--color-888);
 }
 
 .category-list h4 {
   margin-top: 0;
   margin-bottom: 16px;
   font-size: 16px;
-  color: #213547;
+  color: var(--color-213547);
 }
 
 .category-table {
@@ -360,15 +360,15 @@
 }
 
 .category-table thead {
-  background: #f8f9fa;
+  background: var(--color-f8f9fa);
 }
 
 .category-table th {
   padding: 12px;
   text-align: left;
   font-weight: 600;
-  color: #213547;
-  border-bottom: 2px solid #e0e0e0;
+  color: var(--color-213547);
+  border-bottom: 2px solid var(--color-e0e0e0);
 }
 
 .category-table th:nth-child(2),
@@ -378,11 +378,11 @@
 
 .category-table td {
   padding: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-f0f0f0);
 }
 
 .category-table tbody tr:hover {
-  background: #f8f9fa;
+  background: var(--color-f8f9fa);
 }
 
 .category-table tbody tr:last-child td {
@@ -401,11 +401,11 @@
 .amount-cell {
   text-align: right;
   font-weight: 600;
-  color: #213547;
+  color: var(--color-213547);
 }
 
 .percentage-cell {
   text-align: right;
-  color: #666;
+  color: var(--color-666);
   font-size: 13px;
 }

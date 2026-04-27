@@ -1,6 +1,4 @@
-/**
- * Cookie utilities for secure token storage across subdomains
- */
+// Cookie utilities for secure token storage across subdomains
 
 export function setCookie(name: string, value: string, days: number = 30) {
   const expires = new Date();

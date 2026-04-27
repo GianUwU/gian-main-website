@@ -76,9 +76,9 @@ export default function UserBadge() {
           <span className="user-icon" style={{display:'flex',alignItems:'center',justifyContent:'center'}}>
             {/* Hamburger menu icon (black and white SVG) */}
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect y="4" width="22" height="2.5" rx="1.25" fill="#000"/>
-              <rect y="9.25" width="22" height="2.5" rx="1.25" fill="#000"/>
-              <rect y="14.5" width="22" height="2.5" rx="1.25" fill="#000"/>
+              <rect y="4" width="22" height="2.5" rx="1.25" fill="var(--color-000)"/>
+              <rect y="9.25" width="22" height="2.5" rx="1.25" fill="var(--color-000)"/>
+              <rect y="14.5" width="22" height="2.5" rx="1.25" fill="var(--color-000)"/>
             </svg>
           </span>
         </div>
