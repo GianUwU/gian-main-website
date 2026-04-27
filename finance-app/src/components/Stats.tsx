@@ -203,7 +203,7 @@ export default function Stats() {
 
               <p 
                 className="stats-total" 
-                style={{ color: netSavings >= 0 ? '#2A9D8F' : '#E76F51' }}
+                style={{ color: netSavings >= 0 ? 'var(--color-2a9d8f)' : 'var(--color-e76f51)' }}
               >
                 {netSavings >= 0 ? '+' : ''}{netSavings.toFixed(2)} CHF
               </p>
@@ -231,7 +231,7 @@ export default function Stats() {
                             y1={chartHeight - paddingBottom}
                             x2={chartWidth - paddingRight}
                             y2={chartHeight - paddingBottom}
-                            stroke="#ccc"
+                            stroke="var(--color-ccc)"
                           />
 
                           {monthBreakdowns.map((m, i) => {
@@ -267,7 +267,7 @@ export default function Stats() {
                                 y={incomeY}
                                 width={incomeBarW}
                                 height={Math.max(incomeHeight, 1)}
-                                fill="#7BB662"
+                                fill="var(--color-7bb662)"
                                 opacity={0.7}
                                 style={{ cursor: 'pointer' }}
                                 onMouseEnter={() => {
@@ -294,7 +294,7 @@ export default function Stats() {
                               const h = Math.max(seg.height, 1);
                               const y = chartHeight - paddingBottom - accumulated - h;
                               accumulated += h;
-                              const fill = categoryColorMap.get(seg.category) || "#999";
+                              const fill = categoryColorMap.get(seg.category) || "var(--color-999)";
                               return (
                                 <rect
                                   key={seg.category + sidx}
@@ -344,7 +344,7 @@ export default function Stats() {
                               style={{
                                 fontWeight: isCurrentMonth ? 'bold' : 'normal',
                                 fontSize: isCurrentMonth ? '13px' : '12px',
-                                fill: isCurrentMonth ? '#2A9D8F' : '#666'
+                                fill: isCurrentMonth ? 'var(--color-2a9d8f)' : 'var(--color-666)'
                               }}
                             >
                               {m.label}

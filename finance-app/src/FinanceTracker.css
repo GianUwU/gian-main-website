@@ -4,14 +4,14 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  background-color: #F0F2EF;
+  background-color: var(--color-f0f2ef);
   overflow-x: hidden;
 }
 
 .header {
   text-align: center;
   padding: 20px 10px;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid var(--color-e0e0e0);
   margin-bottom: 10px;
   position: relative;
 }
@@ -26,13 +26,13 @@
 .header h1 {
   margin: 0 0 8px 0;
   font-size: 32px;
-  color: #213547;
+  color: var(--color-213547);
 }
 
 .header p {
   margin: 0;
   font-size: 16px;
-  color: #F38375;
+  color: var(--color-f38375);
 }
 
 .user-badge-container {
@@ -61,10 +61,10 @@
   right: 0;
   top: 48px;
   min-width: 180px;
-  background: #fff;
-  border: 1px solid #e0e0e0;
+  background: var(--color-fff);
+  border: 1px solid var(--color-e0e0e0);
   border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 6px 18px var(--color-rgba-black-012);
   z-index: 100;
   overflow: hidden;
 }
@@ -78,9 +78,9 @@
   background: none;
   cursor: pointer;
   font-size: 14px;
-  color: #213547;
+  color: var(--color-213547);
   transition: background 0.2s;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-f0f0f0);
   text-decoration: none;
 }
 
@@ -89,26 +89,26 @@
 }
 
 .user-dropdown-item:hover {
-  background: #f5f7fb;
+  background: var(--color-f5f7fb);
 }
 
 .user-dropdown-item.user-info {
   font-weight: 600;
-  color: #F38375;
+  color: var(--color-f38375);
   cursor: default;
-  background: #fafafa;
+  background: var(--color-fafafa);
 }
 
 .user-dropdown-item.user-info:hover {
-  background: #fafafa;
+  background: var(--color-fafafa);
 }
 
 .user-dropdown-item.logout-item {
-  color: #dc3545;
+  color: var(--color-dc3545);
 }
 
 .user-dropdown-item.logout-item:hover {
-  background: #fff0f0;
+  background: var(--color-fff0f0);
 }
 
 .logout-button {
@@ -122,10 +122,10 @@
 }
 
 .card {
-  background: #F38375;
+  background: var(--color-f38375);
   padding: 20px;
   border-radius: 15px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+  box-shadow: 0 2px 6px var(--color-rgba-black-007);
   transition: background-color 0.3s ease;
 }
 
@@ -134,7 +134,7 @@
 }
 
 .add-transaction-card.income-mode {
-  background: #e8f5e9;
+  background: var(--color-e8f5e9);
 }
 
 .card-header-with-toggle {
@@ -155,7 +155,7 @@
   font-size: 24px;
   font-weight: 300;
   cursor: pointer;
-  color: #333;
+  color: var(--color-333);
   padding: 0;
   width: 32px;
   height: 32px;
@@ -186,7 +186,7 @@
 }
 
 .flip-card-button:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--color-rgba-black-005);
 }
 
 .form {
@@ -198,15 +198,15 @@
 .input {
   padding: 10px;
   border-radius: 10px;
-  border: 1px solid #d0d0d0;
+  border: 1px solid var(--color-d0d0d0);
   font-size: 15px;
 }
 
 .button {
   padding: 12px;
   margin-top: 15px;
-  background: #EF6351;
-  color: #fff;
+  background: var(--color-ef6351);
+  color: var(--color-fff);
   font-size: 16px;
   border-radius: 10px;
   cursor: pointer;
@@ -214,12 +214,12 @@
 }
 
 .button:hover {
-  background: #ad3a2b;
+  background: var(--color-ad3a2b);
 }
 
 .form-error {
-  color: #b00020;
-  background: rgba(176,0,32,0.06);
+  color: var(--color-b00020);
+  background: var(--color-rgba-danger-006);
   padding: 8px 10px;
   border-radius: 8px;
   margin-top: 8px;
@@ -253,28 +253,28 @@
   margin-top: 0;
   padding: 10px 15px;
   min-width: 44px;
-  background: #999;
+  background: var(--color-999);
   font-size: 18px;
   font-weight: 300;
   flex-shrink: 0;
 }
 
 .button-add-category-plus:hover {
-  background: #777;
+  background: var(--color-777);
 }
 
 .button-remove-category {
   margin-top: 0;
   padding: 10px 15px;
   min-width: 44px;
-  background: #a08080;
+  background: var(--color-a08080);
   font-size: 18px;
   font-weight: 300;
   flex-shrink: 0;
 }
 
 .button-remove-category:hover {
-  background: #8a6f6f;
+  background: var(--color-8a6f6f);
 }
 
 .add-category-inputs {
@@ -323,14 +323,14 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background: var(--color-fff);
+  box-shadow: 0 2px 4px var(--color-rgba-black-005);
 }
 
 .table th,
 .table td {
   padding: 5px;
-  border-bottom: 1px solid #d0d0d0;
+  border-bottom: 1px solid var(--color-d0d0d0);
   text-align: left;
   white-space: nowrap;
 }
@@ -383,17 +383,17 @@
 }
 
 .amount-cell.income {
-  color: #2e7d32;
+  color: var(--color-2e7d32);
 }
 
 .amount-cell.expense {
-  color: #213547;
+  color: var(--color-213547);
 }
 
 .empty-state {
   text-align: center;
   padding: 0 20px 60px;
-  color: #999;
+  color: var(--color-999);
 }
 
 .empty-state-image {
@@ -418,26 +418,26 @@
 
 .empty-state h3 {
   margin: 0 0 10px 0;
-  color: #666;
+  color: var(--color-666);
   font-size: 20px;
 }
 
 .empty-state p {
   margin: 0;
-  color: #999;
+  color: var(--color-999);
   font-size: 14px;
 }
 
 .month-header {
   margin-bottom: 20px;
   padding-bottom: 15px;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid var(--color-e0e0e0);
 }
 
 .month-header h3 {
   margin: 0;
   font-size: 20px;
-  color: #213547;
+  color: var(--color-213547);
   text-align: center;
 }
 
@@ -457,7 +457,7 @@
   display: block;
   margin-bottom: 6px;
   font-weight: 600;
-  color: #333;
+  color: var(--color-333);
   font-size: 14px;
 }
 
@@ -467,22 +467,22 @@
   width: 100%;
   box-sizing: border-box;
   padding: 8px 10px;
-  border: 1px solid #d7d7d7;
+  border: 1px solid var(--color-d7d7d7);
   border-radius: 8px;
-  background: #fff;
+  background: var(--color-fff);
   font-size: 14px;
-  color: #213547;
+  color: var(--color-213547);
   transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.06s ease;
 }
 
 .filter-section .input:hover {
-  border-color: #bfbfbf;
+  border-color: var(--color-bfbfbf);
 }
 
 .filter-section .input:focus {
   outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 4px rgba(74,144,226,0.08);
+  border-color: var(--color-4a90e2);
+  box-shadow: 0 0 0 4px var(--color-rgba-focus-008);
 }
 
 /* Make the year select visually consistent and compact */
@@ -490,7 +490,7 @@
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, #666 50%), linear-gradient(135deg, #666 50%, transparent 50%);
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-666) 50%), linear-gradient(135deg, var(--color-666) 50%, transparent 50%);
   background-position: calc(100% - 18px) calc(1em + 2px), calc(100% - 13px) calc(1em + 2px);
   background-size: 6px 6px, 6px 6px;
   background-repeat: no-repeat;
@@ -509,14 +509,14 @@
   justify-content: center;
   margin-top: 20px;
   padding-top: 15px;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--color-e0e0e0);
 }
 
 .nav-button {
   padding: 10px 20px;
-  background: #F38375;
-  color: #FFF;
-  border: 1px solid #d0d0d0;
+  background: var(--color-f38375);
+  color: var(--color-fff);
+  border: 1px solid var(--color-d0d0d0);
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
@@ -524,11 +524,11 @@
 }
 
 .nav-button:hover {
-  background: #c76b5e;
+  background: var(--color-c76b5e);
 }
 
 .nav-button:active {
-  background: #c76b5e;
+  background: var(--color-c76b5e);
 }
 
 .delete-button {
@@ -564,15 +564,15 @@
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  background: #f4f4f4;
-  color: #333;
+  background: var(--color-f4f4f4);
+  color: var(--color-333);
   font-size: 16px;
   cursor: default;
   border: 1px solid transparent;
 }
 
 .row-actions:hover .actions-toggle {
-  background: #eee;
+  background: var(--color-eee);
 }
 
 .actions-dropdown {
@@ -580,10 +580,10 @@
   right: 0;
   top: 0;
   min-width: 100px;
-  background: #fff;
-  border: 1px solid #e0e0e0;
+  background: var(--color-fff);
+  border: 1px solid var(--color-e0e0e0);
   border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  box-shadow: 0 6px 18px var(--color-rgba-black-008);
   z-index: 50;
   display: none;
   flex-direction: column;
@@ -606,11 +606,11 @@
 }
 
 .action-item:hover {
-  background: #f5f7fb;
+  background: var(--color-f5f7fb);
 }
 
 .action-item.delete-action {
-  color: #b00020;
+  color: var(--color-b00020);
 }
 
 @media (max-width: 600px) {
@@ -670,7 +670,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--color-rgba-black-050);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -678,10 +678,10 @@
 }
 
 .modal {
-  background: #fff;
+  background: var(--color-fff);
   padding: 30px;
   border-radius: 15px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--color-rgba-black-015);
   max-width: 400px;
   text-align: center;
 }
@@ -689,7 +689,7 @@
 .modal p {
   margin: 0 0 20px 0;
   font-size: 16px;
-  color: #333;
+  color: var(--color-333);
 }
 
 .password-modal {
@@ -700,7 +700,7 @@
 .password-modal h3 {
   margin: 0 0 20px 0;
   font-size: 22px;
-  color: #213547;
+  color: var(--color-213547);
   text-align: center;
 }
 
@@ -712,14 +712,14 @@
 
 .password-modal label {
   font-weight: 600;
-  color: #333;
+  color: var(--color-333);
   font-size: 14px;
   margin-top: 8px;
 }
 
 .form-success {
-  color: #2e7d32;
-  background: rgba(46, 125, 50, 0.1);
+  color: var(--color-2e7d32);
+  background: var(--color-rgba-success-010);
   padding: 8px 10px;
   border-radius: 8px;
   margin-top: 8px;
@@ -742,11 +742,11 @@
 }
 
 .button-cancel {
-  background: #999;
+  background: var(--color-999);
 }
 
 .button-cancel:hover {
-  background: #777;
+  background: var(--color-777);
 }
 
 .bottom-actions {
@@ -762,11 +762,11 @@
 .logout-footer {
   display: inline-block;
   padding: 8px 12px;
-  background: #f3f3f3;
-  color: #213547;
+  background: var(--color-f3f3f3);
+  color: var(--color-213547);
   border-radius: 8px;
   text-decoration: none;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-e0e0e0);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
@@ -775,16 +775,16 @@
 
 .footer-link:hover,
 .logout-footer:hover {
-  background: #e9e9e9;
+  background: var(--color-e9e9e9);
 }
 
 .logout-footer {
-  border: 1px solid #dc3545;
-  color: #dc3545;
-  background: #fff0f0;
+  border: 1px solid var(--color-dc3545);
+  color: var(--color-dc3545);
+  background: var(--color-fff0f0);
 }
 .logout-footer:hover {
-  background: #ffe0e0;
+  background: var(--color-ffe0e0);
 }
 
 @media (max-width: 600px) {

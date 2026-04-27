@@ -474,7 +474,7 @@ export default function FinanceTracker() {
           <div style={{ display: 'flex', gap: 10 }}>
             <button className="button" type="submit">{editingId ? 'Save' : 'Add'}</button>
             {editingId && (
-              <button type="button" className="button button-cancel-edit" onClick={handleCancelEdit} style={{ background: '#999' }}>
+              <button type="button" className="button button-cancel-edit" onClick={handleCancelEdit} style={{ background: 'var(--color-999)' }}>
                 Cancel
               </button>
             )}
@@ -558,7 +558,7 @@ export default function FinanceTracker() {
                   .map((tx) => {
                     const firstCategory = (tx.categories && tx.categories.length > 0) ? tx.categories[0] : "Other";
                     const bgColor = tx.type === "income" 
-                      ? "#e8f5e9" 
+                      ? "var(--color-e8f5e9)" 
                       : hexToRgba(getCategoryColor(firstCategory), 0.15);
                     
                     return (
@@ -582,7 +582,7 @@ export default function FinanceTracker() {
                                       className="category-badge"
                                       style={{
                                         backgroundColor: getCategoryColor(cat),
-                                        color: "#fff",
+                                        color: "var(--color-fff)",
                                       }}
                                     >
                                       {cat}
@@ -592,7 +592,7 @@ export default function FinanceTracker() {
                                     <span
                                       style={{
                                         fontWeight: "bold",
-                                        color: "#666",
+                                        color: "var(--color-666)",
                                         marginLeft: "4px",
                                       }}
                                     >

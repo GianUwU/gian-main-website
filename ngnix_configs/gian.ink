@@ -1,18 +1,11 @@
 limit_req_zone $binary_remote_addr zone=gian_auth_limit:10m rate=20r/m;
 limit_req_zone $binary_remote_addr zone=gian_api_limit:10m rate=30r/s;
 
-# Redirect all HTTP traffic to HTTPS
+# Redirect HTTP to canonical HTTPS host
 server {
-    if ($host = gian.ink) {
-        return 301 https://$host$request_uri;
-    } # managed by Certbot
-
-
     listen 80;
     server_name gian.ddns.net gian.ink;
-    return 301 https://$host$request_uri;
-
-
+    return 301 https://gian.ink$request_uri;
 }
 
 # Main site HTTPS
@@ -23,8 +16,8 @@ server {
     root /var/www/gian.ink/html;
     index index.html;
     client_max_body_size 2G;
-    ssl_certificate /etc/letsencrypt/live/gian.ink-0001/fullchain.pem; # managed by Certbot
-    ssl_certificate_key /etc/letsencrypt/live/gian.ink-0001/privkey.pem; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/gian.ink/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/gian.ink/privkey.pem; # managed by Certbot
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
@@ -76,5 +69,19 @@ server {
     location / {
         try_files $uri $uri/ /index.html;
     }
+
+
+}
+
+# Redirect alternate HTTPS host to canonical HTTPS host
+server {
+    listen 443 ssl http2;
+    server_name gian.ddns.net;
+    ssl_certificate /etc/letsencrypt/live/gian.ink/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/gian.ink/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    return 301 https://gian.ink$request_uri;
 
 }

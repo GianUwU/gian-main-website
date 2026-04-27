@@ -36,7 +36,7 @@ export default function CategorySelect({
   }, [isOpen]);
 
   const selectedCategory = value !== "__choose_category__" && value !== "__add_category__" ? value : null;
-  const selectedColor = selectedCategory ? getCategoryColor(selectedCategory) : "#ccc";
+  const selectedColor = selectedCategory ? getCategoryColor(selectedCategory) : "var(--color-ccc)";
 
   return (
     <div ref={dropdownRef} style={{ position: "relative", width: "100%" }}>
@@ -46,9 +46,9 @@ export default function CategorySelect({
         style={{
           width: "100%",
           padding: "10px",
-          border: "1px solid #d0d0d0",
+          border: "1px solid var(--color-d0d0d0)",
           borderRadius: "10px",
-          backgroundColor: "#fff",
+          backgroundColor: "var(--color-fff)",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
@@ -72,7 +72,7 @@ export default function CategorySelect({
             <span>{selectedCategory}</span>
           </>
         ) : (
-          <span style={{ color: "#999" }}>Choose Category</span>
+          <span style={{ color: "var(--color-999)" }}>Choose Category</span>
         )}
         <span style={{ marginLeft: "auto" }}>▼</span>
       </button>
@@ -84,14 +84,14 @@ export default function CategorySelect({
             top: "100%",
             left: 0,
             right: 0,
-            backgroundColor: "#fff",
-            border: "1px solid #d0d0d0",
+            backgroundColor: "var(--color-fff)",
+            border: "1px solid var(--color-d0d0d0)",
             borderTop: "none",
             borderRadius: "0 0 10px 10px",
             maxHeight: "200px",
             overflowY: "auto",
             zIndex: 1000,
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+            boxShadow: "0 4px 8px var(--color-rgba-black-010)",
           }}
         >
           {categories.map((cat) => {
@@ -110,7 +110,7 @@ export default function CategorySelect({
                   width: "100%",
                   padding: "10px",
                   border: "none",
-                  backgroundColor: isSelected ? "#f5f5f5" : "#fff",
+                  backgroundColor: isSelected ? "var(--color-f5f5f5)" : "var(--color-fff)",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
@@ -120,10 +120,10 @@ export default function CategorySelect({
                   fontFamily: "inherit",
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = "#f9f9f9";
+                  (e.currentTarget as HTMLElement).style.backgroundColor = "var(--color-f9f9f9)";
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = isSelected ? "#f5f5f5" : "#fff";
+                  (e.currentTarget as HTMLElement).style.backgroundColor = isSelected ? "var(--color-f5f5f5)" : "var(--color-fff)";
                 }}
               >
                 <span
@@ -150,18 +150,18 @@ export default function CategorySelect({
               width: "100%",
               padding: "10px",
               border: "none",
-              backgroundColor: "#fff",
+              backgroundColor: "var(--color-fff)",
               cursor: "pointer",
               textAlign: "left",
               fontSize: "15px",
               fontFamily: "inherit",
-              borderTop: "1px solid #d0d0d0",
+              borderTop: "1px solid var(--color-d0d0d0)",
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.backgroundColor = "#f9f9f9";
+              (e.currentTarget as HTMLElement).style.backgroundColor = "var(--color-f9f9f9)";
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.backgroundColor = "#fff";
+              (e.currentTarget as HTMLElement).style.backgroundColor = "var(--color-fff)";
             }}
           >
             + Add New Category

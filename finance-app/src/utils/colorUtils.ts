@@ -1,23 +1,34 @@
-// Pleasant, hand-picked color palette
-export const PLEASANT_COLORS = [
-  '#6B9BD1', // soft blue
-  '#F4A261', // warm orange
-  '#E76F51', // coral red
-  '#2A9D8F', // teal
-  '#E9C46A', // golden yellow
-  '#8E6C88', // mauve
-  '#4ECDC4', // turquoise
-  '#FF6B9D', // pink
-  '#95B8D1', // powder blue
-  '#B8A87E', // tan
-  '#7BB662', // green
-  '#D4A5A5', // dusty rose
+const CATEGORY_COLOR_VARIABLES = [
+  '--category-color-1',
+  '--category-color-2',
+  '--category-color-3',
+  '--category-color-4',
+  '--category-color-5',
+  '--category-color-6',
+  '--category-color-7',
+  '--category-color-8',
+  '--category-color-9',
+  '--category-color-10',
+  '--category-color-11',
+  '--category-color-12',
 ];
 
-/**
- * Improved hash function to consistently convert a string to a number.
- * Uses a combination of character codes with better distribution.
- */
+const CATEGORY_COLOR_FALLBACK = [
+  '#6B9BD1',
+  '#F4A261',
+  '#E76F51',
+  '#2A9D8F',
+  '#E9C46A',
+  '#8E6C88',
+  '#4ECDC4',
+  '#FF6B9D',
+  '#95B8D1',
+  '#B8A87E',
+  '#7BB662',
+  '#D4A5A5',
+];
+
+//Hash function consistently converts a string to a number.
 function hashString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -28,21 +39,27 @@ function hashString(str: string): number {
   return Math.abs(hash);
 }
 
-/**
- * Get a category color based on the category name.
- * The same category name always gets the same color, regardless of other categories.
- * New categories added won't affect the colors of existing ones.
- */
-export function getCategoryColor(category: string): string {
-  const hash = hashString(category);
-  const index = hash % PLEASANT_COLORS.length;
-  return PLEASANT_COLORS[index];
+function getCategoryPalette(): string[] {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return CATEGORY_COLOR_FALLBACK;
+  }
+
+  const styles = window.getComputedStyle(document.documentElement);
+  return CATEGORY_COLOR_VARIABLES.map((cssVarName, index) => {
+    const value = styles.getPropertyValue(cssVarName).trim();
+    return value || CATEGORY_COLOR_FALLBACK[index];
+  });
 }
 
-/**
- * Create a color map for multiple categories based on their names.
- * Colors are determined by the category name hash, ensuring consistency.
- */
+//Get a category color based on the category name (using the hash)
+export function getCategoryColor(category: string): string {
+  const palette = getCategoryPalette();
+  const hash = hashString(category);
+  const index = hash % palette.length;
+  return palette[index];
+}
+
+// Create a color map for all categories.
 export function createCategoryColorMap(categories: string[]): Map<string, string> {
   const colorMap = new Map<string, string>();
   categories.forEach((cat) => {

@@ -87,9 +87,9 @@ export default function MonthDetailModal({
             </span>
           </div>
 
-          <div className="month-total-summary" style={{ backgroundColor: "#d4edda", borderColor: "#c3e6cb" }}>
+          <div className="month-total-summary" style={{ backgroundColor: "var(--color-d4edda)", borderColor: "var(--color-c3e6cb)" }}>
             <span className="month-total-label">Total Earnings:</span>
-            <span className="month-total-amount" style={{ color: "#2a9d8f" }}>
+            <span className="month-total-amount" style={{ color: "var(--color-2a9d8f)" }}>
               {monthEarnings.toFixed(2)} CHF
             </span>
           </div>
@@ -130,7 +130,7 @@ export default function MonthDetailModal({
                 <div className="insight-label">vs. Year Average</div>
                 <div
                   className="insight-value"
-                  style={{ color: vsAverage > 0 ? "#e76f51" : "#2a9d8f" }}
+                  style={{ color: vsAverage > 0 ? "var(--color-e76f51)" : "var(--color-2a9d8f)" }}
                 >
                   {vsAverage > 0 ? "+" : ""}
                   {vsAverage.toFixed(2)} CHF
@@ -180,7 +180,7 @@ export default function MonthDetailModal({
 
           <div className="category-list">
             <h4>Category Breakdown</h4>
-            <p style={{ fontSize: '12px', color: '#666', margin: '0 0 10px 0', fontStyle: 'italic' }}>
+            <p style={{ fontSize: '12px', color: 'var(--color-666)', margin: '0 0 10px 0', fontStyle: 'italic' }}>
               Transactions with multiple categories count their full amount toward each category. The graph shows each transaction only under its first category.
             </p>
             <table className="category-table">
@@ -206,7 +206,7 @@ export default function MonthDetailModal({
                             className="category-dot"
                             style={{
                               backgroundColor:
-                                categoryColorMap.get(cat) || "#999",
+                                categoryColorMap.get(cat) || "var(--color-999)",
                             }}
                           />
                           {cat}
