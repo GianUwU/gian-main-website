@@ -58,11 +58,7 @@ export default function FinanceTracker() {
 
   useEffect(() => {
     if (!token) return;
-    fetchWithTokenRefresh(API_BASE, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
+    fetchWithTokenRefresh(API_BASE)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch");
         return res.json();
@@ -162,7 +158,6 @@ export default function FinanceTracker() {
       method,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ 
         amount: parsedAmount, 
@@ -223,9 +218,6 @@ export default function FinanceTracker() {
   async function deleteTransaction(id: number) {
     await fetchWithTokenRefresh(`${API_BASE}/${id}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
     setTransactions(transactions.filter((tx) => tx.id !== id));
   }
@@ -329,6 +321,43 @@ export default function FinanceTracker() {
   function shouldShowAllCategories(txId: number): boolean {
     const isOverridden = categoryOverrideIds.has(txId);
     return isOverridden ? !showAllByDefault : showAllByDefault;
+  }
+
+  function escapeCsvValue(value: string): string {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+
+  function handleExportTransactionsCsv() {
+    if (transactions.length === 0) {
+      return;
+    }
+
+    const headers = ["Date", "Type", "Amount", "Categories", "Description"];
+    const rows = transactions.map((tx) => {
+      const categoriesValue = (tx.categories || []).join(" | ");
+      return [
+        tx.date,
+        tx.type || "expense",
+        tx.amount.toFixed(2),
+        categoriesValue,
+        tx.description || "",
+      ].map((value) => escapeCsvValue(String(value)));
+    });
+
+    const csvContent = [headers.map(escapeCsvValue), ...rows]
+      .map((row) => row.join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `transactions-${dateStamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -484,7 +513,23 @@ export default function FinanceTracker() {
       </div>
 
       <div className="card transaction-history-card">
-        <h2>Transaction History</h2>
+        <div className="transaction-history-header">
+          <h2>Transaction History</h2>
+          <button
+            type="button"
+            className="button export-csv-button"
+            onClick={handleExportTransactionsCsv}
+            disabled={transactions.length === 0}
+            title="Download CSV"
+            aria-label="Download CSV"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+        </div>
 
         <div className="month-header">
           <h3>{formatMonthYear()}</h3>

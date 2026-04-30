@@ -2,23 +2,15 @@ import { useAuth } from "./AuthContext";
 import FinanceTracker from "./components/FinanceTracker";
 import Stats from "./components/Stats";
 import { useEffect, useState } from "react";
-import { getCookie } from "./utils/cookies";
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
   const [shouldRedirect, setShouldRedirect] = useState(false);
 
-  // Double-check cookies before redirecting
+  // Redirect to login when auth bootstrap has completed and user is not authenticated.
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      // Redirect only if there is no refresh token to recover the session.
-      const hasRefreshToken = !!getCookie("refreshToken");
-      if (!hasRefreshToken) {
-        console.log("No refresh token cookie found, redirecting to login");
-        setShouldRedirect(true);
-      } else {
-        console.log("Refresh token exists but isAuthenticated is false - waiting for auth sync");
-      }
+      setShouldRedirect(true);
     }
   }, [isLoading, isAuthenticated]);
 

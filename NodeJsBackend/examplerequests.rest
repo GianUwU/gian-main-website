@@ -1,6 +1,6 @@
 @username = gian
 @password = 123456789
-@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJnaWFuIiwiaXNfYWRtaW4iOjAsImlhdCI6MTc3MzUzNjIwMCwiZXhwIjoxNzczNTM3NDAwfQ.lAe7cjckiSMIc-0MzBspOQfKSueFDkUZ6X0G50Rsy9A
+@accessToken =
 @refreshToken =
 
 ### Get all usernames
@@ -31,11 +31,7 @@ Authorization: Bearer {{accessToken}}
 
 ### Refresh token
 POST http://localhost:3000/token
-Content-Type: application/json
-
-{
-    "token": "{{refreshToken}}"
-}
+Cookie: refreshToken={{refreshToken}}
 
 ### Finance: Get transactions
 GET http://localhost:3001/transactions
@@ -73,8 +69,4 @@ Authorization: Bearer {{accessToken}}
 
 ### Logout (delete all refresh tokens from user)
 DELETE http://localhost:3000/users/logout
-Content-Type: application/json
-
-{
-    "token": "{{refreshToken}}"
-}
+Cookie: refreshToken={{refreshToken}}

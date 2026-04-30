@@ -1,10 +1,7 @@
 /**
  * Utility for making authenticated fetch requests with automatic token refresh.
- * When a request fails with 401, automatically attempts to refresh the token
- * and retry the request once.
+ * When a request fails with 401/403, it refreshes auth cookies and retries once.
  */
-
-import { getCookie } from "./cookies";
 
 let refreshTokenFunction: (() => Promise<void>) | null = null;
 
@@ -20,18 +17,9 @@ export async function fetchWithTokenRefresh(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
-  const token = getCookie("authToken");
-
-  // Add Authorization header if token exists and not already present
-  const headers = new Headers(options.headers);
-  if (token && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
   // Make the initial request
   let response = await fetch(url, {
     ...options,
-    headers,
     credentials: 'include',
   });
 
@@ -42,20 +30,10 @@ export async function fetchWithTokenRefresh(
     try {
       // Attempt to refresh the token
       await refreshTokenFunction();
-      
-      // Get the new token
-      const newToken = getCookie("authToken");
-      if (!newToken) {
-        throw new Error("No token after refresh");
-      }
-
-      // Update the Authorization header with the new token
-      headers.set("Authorization", `Bearer ${newToken}`);
 
       // Retry the original request with the new token
       response = await fetch(url, {
         ...options,
-        headers,
         credentials: 'include',
       });
 
