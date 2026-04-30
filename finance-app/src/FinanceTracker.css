@@ -163,7 +163,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 0;
-  transition: background-color 0.2s, transform 0.3s ease;
+  transition: transform 0.3s ease;
   transform: rotate(0deg);
   outline: none;
   user-select: none;
@@ -186,7 +186,7 @@
 }
 
 .flip-card-button:hover {
-  background: var(--color-rgba-black-005);
+  background: none;
 }
 
 .form {
@@ -434,6 +434,38 @@
   border-bottom: 2px solid var(--color-e0e0e0);
 }
 
+.transaction-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.transaction-history-header h2 {
+  margin: 0;
+}
+
+.export-csv-button {
+  margin-top: 0;
+  padding: 8px 10px;
+  font-size: 14px;
+  background: var(--color-999);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.export-csv-button:hover {
+  background: var(--color-777);
+}
+
+.export-csv-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .month-header h3 {
   margin: 0;
   font-size: 20px;
@@ -614,6 +646,11 @@
 }
 
 @media (max-width: 600px) {
+  .transaction-history-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .actions-dropdown{
     top: 25px;
     margin-top: 4px;

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "../AuthContext";
 
 export default function UserBadge() {
-  const { token, username, logout } = useAuth();
+  const { username, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState<boolean>(false);
   const [showPasswordModal, setShowPasswordModal] = useState<boolean>(false);
   const [currentPassword, setCurrentPassword] = useState<string>("");
@@ -34,9 +34,9 @@ export default function UserBadge() {
     try {
       const res = await fetch("/users/change-password", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           current_password: currentPassword,
@@ -59,7 +59,7 @@ export default function UserBadge() {
         setShowPasswordModal(false);
         setPasswordSuccess(false);
       }, 2000);
-    } catch (err) {
+    } catch {
       setPasswordError("Failed to change password. Please try again.");
     }
   }

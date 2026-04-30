@@ -42,11 +42,7 @@ export default function Stats() {
   useEffect(() => {
     let mounted = true;
     if (!token) return;
-    fetchWithTokenRefresh(API_BASE, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
+    fetchWithTokenRefresh(API_BASE)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch");
         return res.json();

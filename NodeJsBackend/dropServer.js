@@ -22,6 +22,7 @@ fs.mkdirSync(UPLOAD_DIR, { recursive: true })
 
 const authDb = new sqlite3.Database(authDbPath)
 const filesDb = new sqlite3.Database(dropDbPath)
+const ACCESS_COOKIE_NAME = 'accessToken'
 
 class ApiError extends Error {
     constructor(status, message) {
@@ -112,7 +113,7 @@ function getTokenFromRequest(req) {
     }
 
     const cookies = parseCookies(req.headers.cookie)
-    return cookies.authToken || null
+    return cookies[ACCESS_COOKIE_NAME] || null
 }
 
 function authenticateAccessToken(req, res, next) {

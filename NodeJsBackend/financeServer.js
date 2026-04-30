@@ -15,6 +15,8 @@ initializeAllDatabases().catch(err => {
 
 const db = new sqlite3.Database(financeDbPath)
 
+const ACCESS_COOKIE_NAME = 'accessToken'
+
 class ApiError extends Error {
     constructor(status, message, details) {
         super(message)
@@ -89,6 +91,38 @@ function parseTransactionBody(body) {
     }
 
     return { amount, description, date, type, categories }
+}
+
+function parseCookies(cookieHeader) {
+    if (!cookieHeader) {
+        return {}
+    }
+
+    return cookieHeader
+        .split(';')
+        .map(part => part.trim())
+        .filter(Boolean)
+        .reduce((acc, part) => {
+            const idx = part.indexOf('=')
+            if (idx === -1) {
+                return acc
+            }
+
+            const key = part.slice(0, idx)
+            const value = decodeURIComponent(part.slice(idx + 1))
+            acc[key] = value
+            return acc
+        }, {})
+}
+
+function getTokenFromRequest(req) {
+    const authHeader = req.headers['authorization']
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.slice('Bearer '.length).trim()
+    }
+
+    const cookies = parseCookies(req.headers.cookie)
+    return cookies[ACCESS_COOKIE_NAME] || null
 }
 
 // Finance endpoints
@@ -198,8 +232,7 @@ app.delete('/transactions/:id', authenticateToken, asyncHandler(async (req, res)
 
 // Authentication Middleware
 function authenticateToken(req, res, next){
-    const authHeader = req.headers['authorization']
-    const token = authHeader && authHeader.split(' ')[1]
+    const token = getTokenFromRequest(req)
     if (token == null) return next(new ApiError(401, 'Missing access token.'))
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, payload) => {

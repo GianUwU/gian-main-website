@@ -16,6 +16,11 @@ initializeAllDatabases().catch(err => {
 
 const db = new sqlite3.Database(authDbPath)
 
+const ACCESS_COOKIE_NAME = 'accessToken'
+const REFRESH_COOKIE_NAME = 'refreshToken'
+const ACCESS_TOKEN_MAX_AGE_MS = 10 * 60 * 1000
+const REFRESH_TOKEN_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
+
 function runSql(sql, params = []) {
     return new Promise((resolve, reject) => {
         db.run(sql, params, function onRun(err) {
@@ -109,18 +114,6 @@ function parsePassword(value) {
     return value
 }
 
-function parseTokenFromBody(body) {
-    if (!body || typeof body !== 'object' || Array.isArray(body)) {
-        throw new ApiError(400, 'Token payload is missing or malformed. Expected JSON object with a token field.')
-    }
-
-    if (typeof body.token !== 'string' || body.token.trim().length === 0) {
-        throw new ApiError(400, 'Token payload is missing or malformed. "token" must be a non-empty string.')
-    }
-
-    return body.token.trim()
-}
-
 function parseIsAdmin(value) {
     if (value === undefined) {
         return false
@@ -133,9 +126,112 @@ function parseIsAdmin(value) {
     return value
 }
 
-function authenticateAccessToken(req, res, next) {
+function parseCookies(cookieHeader) {
+    if (!cookieHeader) {
+        return {}
+    }
+
+    return cookieHeader
+        .split(';')
+        .map(part => part.trim())
+        .filter(Boolean)
+        .reduce((acc, part) => {
+            const idx = part.indexOf('=')
+            if (idx === -1) {
+                return acc
+            }
+
+            const key = part.slice(0, idx)
+            const value = decodeURIComponent(part.slice(idx + 1))
+            acc[key] = value
+            return acc
+        }, {})
+}
+
+function getCookieDomain(hostname) {
+    if (typeof hostname !== 'string' || hostname.length === 0) {
+        return undefined
+    }
+
+    const cleanHost = hostname.split(':')[0].toLowerCase()
+
+    if (cleanHost === 'localhost' || cleanHost === '127.0.0.1' || cleanHost === '::1') {
+        return undefined
+    }
+
+    // If env is set, it wins. Example: .gian.ink
+    if (process.env.COOKIE_DOMAIN && process.env.COOKIE_DOMAIN.trim().length > 0) {
+        return process.env.COOKIE_DOMAIN.trim()
+    }
+
+    const parts = cleanHost.split('.').filter(Boolean)
+    if (parts.length < 2) {
+        return undefined
+    }
+
+    // Share cookies across subdomains by default in production-like hosts.
+    return `.${parts.slice(-2).join('.')}`
+}
+
+function getCookieBaseOptions(req) {
+    const isProduction = process.env.NODE_ENV === 'production'
+    const sameSite = process.env.COOKIE_SAMESITE || (isProduction ? 'none' : 'lax')
+    const secure = process.env.COOKIE_SECURE === 'true' || sameSite.toLowerCase() === 'none'
+    const domain = getCookieDomain(req?.hostname)
+
+    const options = {
+        httpOnly: true,
+        secure,
+        sameSite,
+        path: '/'
+    }
+
+    if (domain) {
+        options.domain = domain
+    }
+
+    return options
+}
+
+function getCookieOptions(req, maxAgeMs) {
+    return {
+        ...getCookieBaseOptions(req),
+        maxAge: maxAgeMs
+    }
+}
+
+function setAuthCookies(req, res, accessToken, refreshToken) {
+    res.cookie(ACCESS_COOKIE_NAME, accessToken, getCookieOptions(req, ACCESS_TOKEN_MAX_AGE_MS))
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, getCookieOptions(req, REFRESH_TOKEN_MAX_AGE_MS))
+}
+
+function clearAuthCookies(req, res) {
+    res.clearCookie(ACCESS_COOKIE_NAME, getCookieBaseOptions(req))
+    res.clearCookie(REFRESH_COOKIE_NAME, getCookieBaseOptions(req))
+}
+
+function getAccessTokenFromRequest(req) {
     const authHeader = req.headers['authorization']
-    const token = authHeader && authHeader.split(' ')[1]
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.slice('Bearer '.length).trim()
+    }
+
+    const cookies = parseCookies(req.headers.cookie)
+    return cookies[ACCESS_COOKIE_NAME] || null
+}
+
+function getRefreshTokenFromRequest(req) {
+    const cookies = parseCookies(req.headers.cookie)
+    const refreshToken = cookies[REFRESH_COOKIE_NAME]
+    if (typeof refreshToken !== 'string' || refreshToken.trim().length === 0) {
+        throw new ApiError(401, 'Missing refresh token cookie.')
+    }
+
+    return refreshToken.trim()
+}
+
+function authenticateAccessToken(req, res, next) {
+    const token = getAccessTokenFromRequest(req)
 
     if (!token) {
         return next(new ApiError(401, 'Missing access token.'))
@@ -161,7 +257,7 @@ function authenticateAccessToken(req, res, next) {
 }
 
 app.post('/token', asyncHandler(async (req, res) => {
-    const refreshToken = parseTokenFromBody(req.body)
+    const refreshToken = getRefreshTokenFromRequest(req)
 
     let user
     try {
@@ -195,7 +291,9 @@ app.post('/token', asyncHandler(async (req, res) => {
         username: tokenRow.username,
         is_admin: Boolean(tokenRow.is_admin)
     })
-    res.json({ accessToken: accessToken })
+
+    res.cookie(ACCESS_COOKIE_NAME, accessToken, getCookieOptions(req, ACCESS_TOKEN_MAX_AGE_MS))
+    res.json({ message: 'Access token refreshed.' })
 }))
 
 
@@ -260,7 +358,7 @@ app.post('/users/register', asyncHandler(async (req, res) => {
 }))
 
 app.delete('/users/logout', asyncHandler(async (req, res) => {
-    const refreshToken = parseTokenFromBody(req.body)
+    const refreshToken = getRefreshTokenFromRequest(req)
 
     // Resolve the user_id from the token, then delete all their refresh tokens
     const tokenRow = await getSql(
@@ -273,6 +371,7 @@ app.delete('/users/logout', asyncHandler(async (req, res) => {
     }
 
     await runSql('DELETE FROM refresh_tokens WHERE user_id = ?', [tokenRow.user_id])
+    clearAuthCookies(req, res)
     res.sendStatus(204)
 }))
 
@@ -306,6 +405,8 @@ app.post('/users/change-password', authenticateAccessToken, asyncHandler(async (
 
     // Revoke all refresh tokens so all other sessions are logged out
     await runSql('DELETE FROM refresh_tokens WHERE user_id = ?', [req.user.id])
+
+    clearAuthCookies(req, res)
 
     res.json({ message: 'Password changed successfully. All sessions have been logged out.' })
 }))
@@ -349,7 +450,15 @@ app.post('/users/login', asyncHandler(async (req, res) => {
         [user.id, refreshToken, expiresAt]
     )
 
-    res.json({ accessToken: accessToken, refreshToken: refreshToken })
+    setAuthCookies(req, res, accessToken, refreshToken)
+    res.json({
+        message: 'Login successful.',
+        user: {
+            id: user.id,
+            username: user.username,
+            is_admin: Boolean(user.is_admin)
+        }
+    })
 }))
 
 function generateAccessToken(user){

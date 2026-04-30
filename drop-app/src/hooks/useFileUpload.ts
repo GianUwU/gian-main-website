@@ -4,7 +4,6 @@
 
 import { useState, useCallback } from 'react'
 import { useAuth } from '../AuthContext'
-import { getCookie } from '../utils/cookies'
 import type { FileInfo } from '../types'
 
 interface UseFileUploadResult {
@@ -30,6 +29,16 @@ interface UseFileUploadResult {
   handleDrop: (e: React.DragEvent<HTMLDivElement>) => void
   handleSubmit: (e: React.FormEvent, onSuccess?: (file: FileInfo) => void) => Promise<void>
   removeFile: (index: number) => void
+}
+
+interface UploadResult {
+  status?: string
+  detail?: string
+  file?: FileInfo & {
+    id: string
+    total_files?: number
+    is_private?: boolean
+  }
 }
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024 // 5GB
@@ -152,7 +161,7 @@ export const useFileUpload = (): UseFileUploadResult => {
     }
 
     try {
-      const uploadWithToken = (authToken: string | null) => new Promise((resolve, reject) => {
+      const uploadWithCookieSession = () => new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest()
 
         xhr.upload.addEventListener('progress', (e) => {
@@ -180,28 +189,25 @@ export const useFileUpload = (): UseFileUploadResult => {
         xhr.open('POST', '/upload')
         xhr.responseType = 'json'
         xhr.withCredentials = true
-        if (authToken) {
-          xhr.setRequestHeader('Authorization', `Bearer ${authToken}`)
-        }
         xhr.send(formData)
       })
 
       let response: unknown
       try {
-        response = await uploadWithToken(getCookie('authToken'))
+        response = await uploadWithCookieSession()
       } catch (err) {
         const status = (err as { status?: number })?.status
         if (status === 401 || status === 403) {
           await refreshToken()
-          response = await uploadWithToken(getCookie('authToken'))
+          response = await uploadWithCookieSession()
         } else {
           throw err
         }
       }
 
-      const result = response as any
+      const result = response as UploadResult
 
-      if (result && result.status === 'ok') {
+      if (result && result.status === 'ok' && result.file) {
         setSelectedFiles([])
         setDescription('')
         setIsPrivate(false)

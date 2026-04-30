@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { fetchWithTokenRefresh } from '../utils/fetchWithTokenRefresh'
 import type { FileInfo, ViewMode } from '../types'
 
 export const useFileList = () => {
@@ -27,7 +28,10 @@ export const useFileList = () => {
         endpoint = `/files/all?offset=${offset}&limit=${limit}`
       }
 
-      const res = await fetch(endpoint, { credentials: 'include' })
+      const res = await fetchWithTokenRefresh(endpoint, { credentials: 'include' })
+      if (!res.ok) {
+        throw new Error(`Failed to load files (${res.status})`)
+      }
       const fetchedFiles: FileInfo[] = await res.json()
 
       if (fetchedFiles.length === 0) {

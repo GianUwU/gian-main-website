@@ -4,6 +4,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '../AuthContext'
+import { fetchWithTokenRefresh } from '../utils/fetchWithTokenRefresh'
 import { formatFileSize, formatExpiresIn, isImage } from '../utils/fileUtils'
 import type { FileInfo } from '../types'
 
@@ -35,7 +36,7 @@ export default function FileList({
     if (!deleteConfirm) return
 
     try {
-      const response = await fetch(`/files/${deleteConfirm.id}`, {
+      const response = await fetchWithTokenRefresh(`/files/${deleteConfirm.id}`, {
         method: 'DELETE',
         credentials: 'include'
       })
