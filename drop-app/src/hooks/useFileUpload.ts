@@ -4,6 +4,7 @@
 
 import { useState, useCallback } from 'react'
 import { useAuth } from '../AuthContext'
+import { getAppUrl } from '../utils/fileUtils'
 import type { FileInfo } from '../types'
 
 interface UseFileUploadResult {
@@ -137,7 +138,7 @@ export const useFileUpload = (): UseFileUploadResult => {
 
     if (!isAuthenticated) {
       setStatus('Please login to upload files')
-      window.location.href = '/login'
+      window.location.href = getAppUrl('/login')
       return
     }
 
@@ -217,7 +218,7 @@ export const useFileUpload = (): UseFileUploadResult => {
           onSuccess(result.file)
         }
 
-        const fileLink = `${window.location.origin}/view/${result.file.id}`
+        const fileLink = `${window.location.origin}${getAppUrl(`/view/${result.file.id}`)}`
         const fileCount = result.file.total_files || 1
         const successMsg = fileCount > 1 ? `${fileCount} files uploaded!` : 'Upload successful!'
         setStatus(`success:${fileLink}:${successMsg}`)

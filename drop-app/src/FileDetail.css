@@ -69,6 +69,33 @@
   margin-bottom: 1rem;
 }
 
+.media-preview-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.media-preview-video {
+  width: 100%;
+  max-width: 100%;
+  max-height: 500px;
+  border-radius: 10px;
+  background: #000;
+}
+
+.media-preview-audio {
+  width: min(100%, 460px);
+}
+
+.media-subtitle-status {
+  font-size: 0.8rem;
+  color: #4a5568;
+  text-align: center;
+}
+
 .file-icon-large {
   display: flex;
   flex-direction: column;
@@ -81,6 +108,10 @@
   font-size: 6rem;
   margin-bottom: 1rem;
   color: #999;
+}
+
+.audio-icon-large .icon {
+  margin-bottom: 0;
 }
 
 .file-icon-large .extension {

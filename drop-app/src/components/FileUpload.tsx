@@ -5,7 +5,7 @@
 import { useAuth } from '../AuthContext'
 import { useStorageInfo } from '../hooks/useStorageInfo'
 import { useFileUpload } from '../hooks/useFileUpload'
-import { formatFileSize } from '../utils/fileUtils'
+import { formatFileSize, getAppUrl } from '../utils/fileUtils'
 import type { FileInfo } from '../types'
 
 interface FileUploadProps {
@@ -38,6 +38,21 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
     removeFile
   } = useFileUpload()
 
+  const currentPath = `${window.location.pathname}${window.location.search}`
+  const loginUrl = getAppUrl(`/login?redirect=${encodeURIComponent(currentPath)}`)
+
+  if (!isAuthenticated) {
+    return (
+      <div className="upload-card upload-card-logged-out">
+        <h2>Upload a File</h2>
+        <p className="upload-signin-text">Sign in is required to upload new files.</p>
+        <a href={loginUrl} className="upload-signin-btn">
+          sign in to upload files
+        </a>
+      </div>
+    )
+  }
+
   return (
     <div className="upload-card">
       <h2>Upload a File</h2>
@@ -60,8 +75,7 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
         </div>
       )}
 
-      {isAuthenticated ? (
-        <form onSubmit={(e) => handleSubmit(e, onUploadSuccess)} className="upload-form">
+      <form onSubmit={(e) => handleSubmit(e, onUploadSuccess)} className="upload-form">
           <div 
             className={`file-drop-zone ${isDragging ? 'dragging' : ''} ${selectedFiles.length > 0 ? 'has-files' : ''}`}
             onDragEnter={handleDragEnter}
@@ -202,11 +216,6 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
             {uploading ? 'Uploading...' : 'Upload'}
           </button>
         </form>
-      ) : (
-        <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-          <p>Please <a href="/login" style={{ color: '#667eea', fontWeight: '600' }}>login</a> to upload files</p>
-        </div>
-      )}
 
       {status && (
         <div className="status">

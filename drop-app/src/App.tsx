@@ -10,7 +10,12 @@ import { useFileList } from './hooks/useFileList'
 function App() {
   const { isLoading, isAuthenticated } = useAuth()
   const { files, loading, showMyFiles, showAllFiles, switchView, addFile, removeFile } = useFileList()
+  const appBase = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
   const path = window.location.pathname
+  const routePath = appBase.length > 0
+    ? (path === appBase ? '/' : (path.startsWith(`${appBase}/`) ? path.slice(appBase.length) : path))
+    : path
+  const supHomeboySrc = `${import.meta.env.BASE_URL}SupHomeboy.png`
 
   // Wait for auth to load before making routing decisions
   if (isLoading) {
@@ -22,12 +27,12 @@ function App() {
   }
 
   // Route handlers
-  const isLoginRoute = path === '/login' || path === '/login/'
-  const downloadMatch = path.match(/^\/view\/([\w\-]+)\/now\/?$/i)
-  const viewMatch = path.match(/^\/view\/([\w\-]+)\/?$/i)
+  const isLoginRoute = routePath === '/login' || routePath === '/login/'
+  const downloadMatch = routePath.match(/^\/view\/([\w\-]+)\/now\/?$/i)
+  const viewMatch = routePath.match(/^\/view\/([\w\-]+)\/?$/i)
 
-  // Login route or not authenticated
-  if (isLoginRoute || !isAuthenticated) {
+  // Login route should always render the auth page.
+  if (isLoginRoute) {
     return <Login />
   }
 
@@ -54,12 +59,12 @@ function App() {
       <div className="header">
         <h1>Gian Dropserver</h1>
         <p>Upload and share your files</p>
-        <UserBadge />
+        {isAuthenticated && <UserBadge />}
       </div>
 
       <FileUpload onUploadSuccess={addFile} />
 
-      <img src="/SupHomeboy.png" width="400" alt="SupHomeboy" className="homeboy-img" />
+      <img src={supHomeboySrc} width="400" alt="SupHomeboy" className="homeboy-img" />
 
       <FileList
         files={files}

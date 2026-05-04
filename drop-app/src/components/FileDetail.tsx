@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../AuthContext'
-import { formatFileSize, formatDate, formatExpiresIn, isImage } from '../utils/fileUtils'
+import {
+  formatFileSize,
+  formatDate,
+  formatExpiresIn,
+  getAppUrl,
+  getUploadUrl,
+  isImage,
+  isVideo,
+  isAudio,
+  isSrt,
+  findMatchingSubtitleFilename,
+} from '../utils/fileUtils'
 import type { FileInfo, BatchInfo } from '../types'
 import '../FileDetail.css'
 
@@ -18,10 +29,107 @@ function FileDetail({ fileId }: FileDetailProps) {
   const [deleteStatus, setDeleteStatus] = useState<string>('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [copyStatus, setCopyStatus] = useState<string>('')
+  const [subtitleTrackUrl, setSubtitleTrackUrl] = useState<string | null>(null)
+  const [subtitleFilename, setSubtitleFilename] = useState<string | null>(null)
+  const [subtitleLoading, setSubtitleLoading] = useState(false)
+
+  const sortFilesByName = (files: FileInfo[]): FileInfo[] => {
+    return [...files].sort((a, b) =>
+      a.original_filename.localeCompare(b.original_filename, undefined, {
+        numeric: true,
+        sensitivity: 'base'
+      })
+    )
+  }
+
+  const srtToVtt = (srtContent: string): string => {
+    const normalized = srtContent.replace(/\r/g, '').trim()
+    if (!normalized) {
+      return 'WEBVTT\n\n'
+    }
+
+    const convertedTimestamps = normalized.replace(
+      /(\d{2}:\d{2}:\d{2}),(\d{3})/g,
+      '$1.$2'
+    )
+
+    return `WEBVTT\n\n${convertedTimestamps}\n`
+  }
 
   useEffect(() => {
     loadFileDetails()
   }, [fileId])
+
+  useEffect(() => {
+    let objectUrlToRevoke: string | null = null
+    let isMounted = true
+
+    const prepareSubtitleTrack = async () => {
+      setSubtitleTrackUrl(null)
+      setSubtitleFilename(null)
+      setSubtitleLoading(false)
+
+      if (!batch) {
+        return
+      }
+
+      const activeFile = selectedFile || batch.files[0]
+      if (!activeFile || !isVideo(activeFile.original_filename, activeFile.file_type)) {
+        return
+      }
+
+      const matchedSubtitleStorageFilename = findMatchingSubtitleFilename(
+        activeFile.original_filename,
+        batch.files
+      )
+
+      if (!matchedSubtitleStorageFilename) {
+        return
+      }
+
+      const matchedSubtitleFile = batch.files.find(
+        f => f.filename === matchedSubtitleStorageFilename
+      )
+
+      setSubtitleFilename(matchedSubtitleFile?.original_filename || matchedSubtitleStorageFilename)
+      setSubtitleLoading(true)
+
+      try {
+        const response = await fetch(getUploadUrl(matchedSubtitleStorageFilename))
+        if (!response.ok) {
+          throw new Error(`Subtitle fetch failed (${response.status})`)
+        }
+
+        const srtContent = await response.text()
+        const vttContent = srtToVtt(srtContent)
+        const vttBlob = new Blob([vttContent], { type: 'text/vtt' })
+        const vttObjectUrl = URL.createObjectURL(vttBlob)
+        objectUrlToRevoke = vttObjectUrl
+
+        if (isMounted) {
+          setSubtitleTrackUrl(vttObjectUrl)
+        }
+      } catch (err) {
+        console.error('Failed to prepare subtitles:', err)
+        if (isMounted) {
+          setSubtitleTrackUrl(null)
+        }
+      } finally {
+        if (isMounted) {
+          setSubtitleLoading(false)
+        }
+      }
+    }
+
+    prepareSubtitleTrack()
+
+    return () => {
+      isMounted = false
+      if (objectUrlToRevoke) {
+        URL.revokeObjectURL(objectUrlToRevoke)
+      }
+    }
+  }, [batch, selectedFile])
 
   const loadFileDetails = async () => {
     try {
@@ -40,8 +148,12 @@ function FileDetail({ fileId }: FileDetailProps) {
       
       // Check if this is a batch response
       if (data.is_batch) {
-        setBatch(data)
-        setSelectedFile(data.files[0]) // Select first file by default
+        const sortedFiles = sortFilesByName(data.files)
+        setBatch({
+          ...data,
+          files: sortedFiles,
+        })
+        setSelectedFile(sortedFiles[0]) // Select first file by default
       } else {
         setFile(data)
       }
@@ -71,7 +183,7 @@ function FileDetail({ fileId }: FileDetailProps) {
         const count = batch ? batch.files.length : 1
         setDeleteStatus(`${count} file${count > 1 ? 's' : ''} deleted successfully`)
         setTimeout(() => {
-          window.location.href = '/'
+          window.location.href = getAppUrl('/')
         }, 1500)
       } else {
         const result = await response.json()
@@ -95,6 +207,101 @@ function FileDetail({ fileId }: FileDetailProps) {
     setTimeout(() => setCopyStatus(''), 3000)
   }
 
+  const renderFilePreview = (previewFile: FileInfo, batchFiles?: FileInfo[]) => {
+    if (isImage(previewFile.filename)) {
+      return <img src={getUploadUrl(previewFile.filename)} alt={previewFile.original_filename} />
+    }
+
+    if (isVideo(previewFile.original_filename, previewFile.file_type)) {
+      const canUseBatchSubtitles = Boolean(batchFiles)
+
+      return (
+        <div className="media-preview-wrapper">
+          <video
+            key={previewFile.id}
+            controls
+            className="media-preview-video"
+            preload="metadata"
+            onLoadedMetadata={(event) => {
+              const trackList = event.currentTarget.textTracks
+              if (trackList && trackList.length > 0) {
+                trackList[0].mode = 'showing'
+              }
+            }}
+          >
+            <source
+              key={previewFile.filename}
+              src={getUploadUrl(previewFile.filename)}
+              type={previewFile.file_type || undefined}
+            />
+            {canUseBatchSubtitles && subtitleTrackUrl && (
+              <track
+                key={subtitleTrackUrl}
+                kind="captions"
+                src={subtitleTrackUrl}
+                srcLang="en"
+                label="English"
+                default
+              />
+            )}
+            Your browser does not support video playback.
+          </video>
+          {canUseBatchSubtitles && subtitleFilename && subtitleTrackUrl && (
+            <div className="media-subtitle-status">
+              Subtitles loaded automatically: {subtitleFilename}
+            </div>
+          )}
+          {canUseBatchSubtitles && subtitleFilename && subtitleLoading && (
+            <div className="media-subtitle-status">Loading subtitles: {subtitleFilename}</div>
+          )}
+        </div>
+      )
+    }
+
+    if (isAudio(previewFile.original_filename, previewFile.file_type)) {
+      return (
+        <div className="media-preview-wrapper">
+          <div className="file-icon-large audio-icon-large">
+            <div className="icon">🎵</div>
+          </div>
+          <audio controls className="media-preview-audio" preload="metadata">
+            <source src={getUploadUrl(previewFile.filename)} type={previewFile.file_type || undefined} />
+            Your browser does not support audio playback.
+          </audio>
+        </div>
+      )
+    }
+
+    return (
+      <div className="file-icon-large">
+        <div className="icon">📄</div>
+        <div className="extension">
+          {previewFile.original_filename.split('.').pop()?.toUpperCase()}
+        </div>
+      </div>
+    )
+  }
+
+  const getBatchFileIcon = (batchFile: FileInfo) => {
+    if (isImage(batchFile.filename)) {
+      return '🖼️'
+    }
+
+    if (isVideo(batchFile.original_filename, batchFile.file_type)) {
+      return '🎬'
+    }
+
+    if (isAudio(batchFile.original_filename, batchFile.file_type)) {
+      return '🎵'
+    }
+
+    if (isSrt(batchFile.original_filename)) {
+      return '💬'
+    }
+
+    return '📄'
+  }
+
   if (loading) {
     return (
       <div className="file-detail-container">
@@ -108,7 +315,7 @@ function FileDetail({ fileId }: FileDetailProps) {
       <div className="file-detail-container">
         <div className="error-message">
           <h2>{error || 'File not found'}</h2>
-          <a href="/" className="back-link">← Back to Home</a>
+          <a href={getAppUrl('/')} className="back-link">← Back to Home</a>
         </div>
       </div>
     )
@@ -123,7 +330,7 @@ function FileDetail({ fileId }: FileDetailProps) {
     return (
       <div className="file-detail-container">
         <div className="file-detail-header">
-          <a href="/" className="back-link">← Back to Home</a>
+          <a href={getAppUrl('/')} className="back-link">← Back to Home</a>
           {firstFile.is_private && (
             <span className="private-badge">🔒 Private</span>
           )}
@@ -132,16 +339,7 @@ function FileDetail({ fileId }: FileDetailProps) {
         <div className="file-detail-card">
           {/* Left side - File preview */}
           <div className="file-detail-preview">
-            {isImage(displayFile.filename) ? (
-              <img src={`/uploads/${displayFile.filename}`} alt={displayFile.original_filename} />
-            ) : (
-              <div className="file-icon-large">
-                <div className="icon">📄</div>
-                <div className="extension">
-                  {displayFile.original_filename.split('.').pop()?.toUpperCase()}
-                </div>
-              </div>
-            )}
+            {renderFilePreview(displayFile, batch.files)}
             <div className="preview-filename">{displayFile.original_filename}</div>
             <div className="preview-filesize">{formatFileSize(displayFile.file_size)}</div>
             <button 
@@ -202,7 +400,7 @@ function FileDetail({ fileId }: FileDetailProps) {
                       onClick={() => setSelectedFile(f)}
                     >
                       <span className="file-icon-compact">
-                        {isImage(f.filename) ? '🖼️' : '📄'}
+                        {getBatchFileIcon(f)}
                       </span>
                       <div className="file-info-compact">
                         <span className="file-name-compact">{f.original_filename}</span>
@@ -297,7 +495,7 @@ function FileDetail({ fileId }: FileDetailProps) {
   return (
     <div className="file-detail-container">
       <div className="file-detail-header">
-        <a href="/" className="back-link">← Back to Home</a>
+        <a href={getAppUrl('/')} className="back-link">← Back to Home</a>
         {file.is_private && (
           <span className="private-badge">🔒 Private</span>
         )}
@@ -305,16 +503,7 @@ function FileDetail({ fileId }: FileDetailProps) {
 
       <div className="file-detail-card">
         <div className="file-detail-preview">
-          {isImage(file.filename) ? (
-            <img src={`/uploads/${file.filename}`} alt={file.original_filename} />
-          ) : (
-            <div className="file-icon-large">
-              <div className="icon">📄</div>
-              <div className="extension">
-                {file.original_filename.split('.').pop()?.toUpperCase()}
-              </div>
-            </div>
-          )}
+          {renderFilePreview(file)}
         </div>
 
         <div className="file-detail-info">

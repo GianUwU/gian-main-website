@@ -308,6 +308,42 @@ async function withBatchSummaries(rows) {
     return out
 }
 
+async function listGroupedFiles({ whereClause, params = [], offset = 0, limit = 15 }) {
+    const safeLimit = Math.max(Number(limit) || 15, 1)
+    const safeOffset = Math.max(Number(offset) || 0, 0)
+
+    const rows = await allSql(
+        `WITH grouped AS (
+            SELECT
+                COALESCE(batch_id, id) AS entry_id,
+                MIN(rowid) AS representative_rowid,
+                MAX(uploaded_at) AS latest_uploaded_at,
+                COUNT(*) AS total_files,
+                SUM(file_size) AS total_size
+            FROM files
+            WHERE ${whereClause}
+            GROUP BY COALESCE(batch_id, id)
+        ),
+        paged AS (
+            SELECT *
+            FROM grouped
+            ORDER BY latest_uploaded_at DESC
+            LIMIT ? OFFSET ?
+        )
+        SELECT f.*, p.total_files, p.total_size
+        FROM paged p
+        JOIN files f ON f.rowid = p.representative_rowid
+        ORDER BY p.latest_uploaded_at DESC`,
+        [...params, safeLimit, safeOffset]
+    )
+
+    return rows.map(row => ({
+        ...mapFileRow(row),
+        total_files: row.batch_id ? row.total_files : null,
+        total_size: row.batch_id ? row.total_size : null,
+    }))
+}
+
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 * 1024
 const MAX_STORAGE_BYTES = 50 * 1024 * 1024 * 1024
 
@@ -416,32 +452,23 @@ app.get('/files', asyncHandler(async (req, res) => {
     const offset = Number(req.query.offset ?? 0)
     const limit = Number(req.query.limit ?? 15)
 
-    const rows = await allSql(
-        `SELECT *
-         FROM files
-         WHERE is_private = 0
-         ORDER BY uploaded_at DESC
-         LIMIT ? OFFSET ?`,
-        [Math.max(limit, 1), Math.max(offset, 0)]
-    )
-
-    res.json(await withBatchSummaries(rows))
+    res.json(await listGroupedFiles({
+        whereClause: 'is_private = 0',
+        offset,
+        limit,
+    }))
 }))
 
 app.get('/files/my', authenticateAccessToken, asyncHandler(async (req, res) => {
     const offset = Number(req.query.offset ?? 0)
     const limit = Number(req.query.limit ?? 15)
 
-    const rows = await allSql(
-        `SELECT *
-         FROM files
-         WHERE user_id = ?
-         ORDER BY uploaded_at DESC
-         LIMIT ? OFFSET ?`,
-        [req.user.id, Math.max(limit, 1), Math.max(offset, 0)]
-    )
-
-    res.json(await withBatchSummaries(rows))
+    res.json(await listGroupedFiles({
+        whereClause: 'user_id = ?',
+        params: [req.user.id],
+        offset,
+        limit,
+    }))
 }))
 
 app.get('/files/all', authenticateAccessToken, asyncHandler(async (req, res) => {
@@ -452,15 +479,11 @@ app.get('/files/all', authenticateAccessToken, asyncHandler(async (req, res) => 
     const offset = Number(req.query.offset ?? 0)
     const limit = Number(req.query.limit ?? 15)
 
-    const rows = await allSql(
-        `SELECT *
-         FROM files
-         ORDER BY uploaded_at DESC
-         LIMIT ? OFFSET ?`,
-        [Math.max(limit, 1), Math.max(offset, 0)]
-    )
-
-    res.json(await withBatchSummaries(rows))
+    res.json(await listGroupedFiles({
+        whereClause: '1 = 1',
+        offset,
+        limit,
+    }))
 }))
 
 app.get('/files/:fileId', asyncHandler(async (req, res) => {

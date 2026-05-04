@@ -5,7 +5,7 @@
 import { useState } from 'react'
 import { useAuth } from '../AuthContext'
 import { fetchWithTokenRefresh } from '../utils/fetchWithTokenRefresh'
-import { formatFileSize, formatExpiresIn, isImage } from '../utils/fileUtils'
+import { formatFileSize, formatExpiresIn, getAppUrl, getUploadUrl, isImage } from '../utils/fileUtils'
 import type { FileInfo } from '../types'
 
 interface FileListProps {
@@ -98,7 +98,7 @@ export default function FileList({
           ) : (
             files.map(file => (
               <div key={file.id} className="file-card">
-                <a href={`/view/${file.id}`} className="file-preview-link">
+                <a href={getAppUrl(`/view/${file.id}`)} className="file-preview-link">
                   <div className="file-preview">
                     {file.total_files && file.total_files > 1 ? (
                       <div className="file-icon batch-icon">
@@ -108,7 +108,7 @@ export default function FileList({
                         </div>
                       </div>
                     ) : isImage(file.filename) ? (
-                      <img src={`/uploads/${file.filename}`} alt={file.original_filename} />
+                      <img src={getUploadUrl(file.filename)} alt={file.original_filename} />
                     ) : (
                       <div className="file-icon">
                         📄
@@ -120,7 +120,7 @@ export default function FileList({
                   </div>
                 </a>
                 <div className="file-info">
-                  <a href={`/view/${file.id}`} className="file-name-link">
+                  <a href={getAppUrl(`/view/${file.id}`)} className="file-name-link">
                     {file.description ? (
                       <div className="file-name" title={file.description}>
                         {file.description.length > 60 ? `${file.description.substring(0, 60)}...` : file.description}
@@ -147,7 +147,7 @@ export default function FileList({
                   )}
                   <div className="file-actions">
                     <a 
-                      href={`/uploads/${file.filename}`} 
+                      href={getUploadUrl(file.filename)} 
                       download={file.original_filename}
                       className="btn-download"
                       onClick={(e) => e.stopPropagation()}

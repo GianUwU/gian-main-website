@@ -440,10 +440,17 @@
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 10px;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .transaction-history-header h2 {
   margin: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .export-csv-button {
@@ -455,6 +462,7 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .export-csv-button:hover {
@@ -646,11 +654,6 @@
 }
 
 @media (max-width: 600px) {
-  .transaction-history-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .actions-dropdown{
     top: 25px;
     margin-top: 4px;
