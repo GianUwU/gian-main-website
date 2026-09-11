@@ -20,8 +20,11 @@ const DEFAULT_EXPENSE_CATEGORIES = ["Food", "Transport", "Subscription", "Shoppi
 const DEFAULT_INCOME_CATEGORIES = ["Salary", "Freelance", "Gift", "Pocket Money", "Other"];
 
 function formatDayOnly(dateStr: string): string {
+  if (typeof dateStr !== "string" || !dateStr.includes("-")) {
+    return "--";
+  }
   const [, , day] = dateStr.split("-");
-  return day;
+  return day || "--";
 }
 
 export default function FinanceTracker() {
@@ -64,15 +67,16 @@ export default function FinanceTracker() {
         return res.json();
       })
       .then((data: Transaction[]) => {
-        setTransactions(data);
+        const safeData = Array.isArray(data) ? data : [];
+        setTransactions(safeData);
         const dbExpenseCategories = Array.from(new Set(
-          data
+          safeData
             .filter(tx => tx.type !== "income")
             .flatMap((tx) => tx.categories || [])
             .map((c: string) => c.slice(0, 20))
         ));
         const dbIncomeCategories = Array.from(new Set(
-          data
+          safeData
             .filter(tx => tx.type === "income")
             .flatMap((tx) => tx.categories || [])
             .map((c: string) => c.slice(0, 20))
@@ -273,9 +277,9 @@ export default function FinanceTracker() {
     let filtered = transactions;
     
     if (filterYear === "current") {
-      filtered = filtered.filter((tx) => tx.date.startsWith(`${year}-${month}`));
+      filtered = filtered.filter((tx) => (tx.date ?? "").startsWith(`${year}-${month}`));
     } else if (filterYear !== "all") {
-      filtered = filtered.filter((tx) => tx.date.startsWith(filterYear));
+      filtered = filtered.filter((tx) => (tx.date ?? "").startsWith(filterYear));
     }
     
     if (filterCategory !== "All") {
@@ -286,7 +290,11 @@ export default function FinanceTracker() {
   }
 
   const availableYears = Array.from(
-    new Set(transactions.map((tx) => parseInt(tx.date.slice(0, 4))))
+    new Set(
+      transactions
+        .map((tx) => parseInt((tx.date ?? "").slice(0, 4), 10))
+        .filter((year) => Number.isFinite(year))
+    )
   ).sort((a, b) => b - a);
 
   function handlePreviousMonth() {

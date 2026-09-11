@@ -1,88 +1,125 @@
-# Gian's Web Applications
+# Gian's Web Applications & Services 🚀
 
-## 🌐 Live Sites
-
-Visit the applications deployed on my personal domain:
-
-| Application | URL | Purpose |
-|---|---|---|
-| **Main Portal** | [gian.ink](https://gian.ink) | Personal portal & file management |
-| **File Drop** | [drop.gian.ink](https://drop.gian.ink) | File sharing & upload service |
-| **Finance Tracker** | [finance.gian.ink](https://finance.gian.ink) | Personal finance management |
+A modern full-stack web application monorepo featuring shared authentication, real-time sync, file sharing, and expense tracking deployed on a personal self-hosted cloud infrastructure.
 
 ---
 
-## 📚 Project Overview
+## 🌐 Live Applications
 
-This is a full-stack monorepo containing multiple web applications with shared authentication, built with modern Node.js and React technologies.
+| Application | URL | Repository | Description |
+| :--- | :--- | :--- | :--- |
+| **Main Portal** | [gian.ink](https://gian.ink) | [GianUwU/gian-main-website](https://github.com/GianUwU/gian-main-website) | Interactive portal and personal project showcase |
+| **MTG Tabletop Sync** | [mtg.gian.ink](https://mtg.gian.ink) | [GianUwU/mtg-tabletop-sync](https://github.com/GianUwU/mtg-tabletop-sync) | Real-time tabletop match tracker with multi-device phone controls |
+| **Finance Tracker** | [finance.gian.ink](https://finance.gian.ink) | [GianUwU/gian-main-website](https://github.com/GianUwU/gian-main-website) | Expense analytics, budget management & reporting |
+| **Drop** | [drop.gian.ink](https://drop.gian.ink) | [GianUwU/gian-main-website](https://github.com/GianUwU/gian-main-website) | Self-hosted fast file sharing, drag & drop, clipboard paste & preview |
 
-### Architecture
+---
+
+## 📸 Screenshots & Previews
+
+### ⚔️ MTG Tabletop Sync
+Real-time synchronized tabletop tracker for Magic: The Gathering matches.
+![MTG Tabletop Sync Preview](./mtg_preview.jpeg)
+
+---
+
+### 💰 Finance Tracker
+Personal finance management dashboard with monthly analytics, category breakdowns, and transaction history.
+![Finance Tracker Analytics](./finance_stats.png)
+![Finance Tracker Entry Portal](./Finance_Entry.png)
+
+---
+
+### 📁 Drop - Fast File Sharing
+Self-hosted cloud storage with instant downloads, in-browser previews, and clipboard paste support.
+![Drop File Sharing](./Drop_Entry.png)
+
+---
+
+## 🏗️ Monorepo Architecture
 
 ```
 webserver/
-├── NodeJsBackend/          # Express.js + SQLite backends
-│   ├── authServer.js       # Authentication & user management (port 3000)
-│   ├── dropServer.js       # File sharing service (port 3002)
-│   ├── financeServer.js    # Finance tracker API (port 3001)
-│   └── Databases/          # SQLite databases (git-ignored)
+├── NodeJsBackend/          # Node.js Express microservices & SQLite databases
+│   ├── authServer.js       # Centralized authentication & JWT token management (Port 3000)
+│   ├── financeServer.js    # Financial transactions & categories API (Port 3001)
+│   ├── dropServer.js       # File upload, storage & raw streaming API (Port 3002)
+│   ├── db.js               # Database initialization & migrations
+│   └── Databases/          # Persistent SQLite databases
 │
-├── main-app/               # Main portal (React + Vite)
-├── drop-app/               # File sharing UI (React + Vite)
-├── finance-app/            # Finance tracker UI (React + Vite)
-├── flavia-app/             # Flavia application (React + Vite)
+├── main-app/               # Main landing portal (React 19 + TypeScript + Vite)
+├── finance-app/            # Finance tracker frontend (React 19 + TypeScript + Vite)
+├── drop-app/               # File sharing frontend (React 19 + TypeScript + Vite)
+├── flavia-app/             # Flavia application (React 19 + TypeScript + Vite)
 │
-└── ngnix_configs/          # Nginx configuration for domains
+├── ngnix_configs/          # Production reverse-proxy Nginx configurations with SSL
+├── update_all.sh           # Automated container build and registry deployment pipeline
+├── start-dev.sh            # Local development startup script
+└── stop-dev.sh             # Local development shutdown script
 ```
 
-### Technology Stack
+---
 
-- **Backend:** Node.js (Express) with SQLite, or Python
-- **Frontend:** React 19 + TypeScript + Vite
-- **Authentication:** JWT with refresh tokens
-- **Database:** SQLite for auth, files, and finance data
-- **Deployment:** Docker + Docker Compose + Nginx
-- **Hosting:** Deployed on my own server using docker and nginx (and with server I mean my old crappy laptop)
+## 🛠️ Technology Stack
+
+- **Frontend**: React 19, TypeScript, Vite, CSS Grid & Flexbox, Vanilla CSS design system
+- **Backend**: Node.js (Express), SQLite3, JWT (`jsonwebtoken`), bcrypt password hashing
+- **Containerization**: Docker, Docker Compose, Multi-stage Alpine builds
+- **Reverse Proxy & SSL**: Nginx, Let's Encrypt SSL/TLS, Rate Limiting
+
+---
+
+## 🔐 Security & Authentication
+
+- **Centralized Auth**: Shared authentication across all services.
+- **HttpOnly Cookies**: Secure cross-subdomain authentication using JWT access tokens (10-minute validity) paired with persistent refresh tokens (30-day validity).
+- **Graceful Token Refresh**: Automatic in-flight token refresh with request retries upon token expiration.
+- **Secure Password Hashing**: `bcrypt` with 10 salt rounds.
+
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 20+
+- Docker & Docker Compose
 - SQLite3
-- Docker & Docker Compose (for production)
 
-## 🔐 Authentication
+### 1. Local Development
+To launch all backend microservices and Vite frontend servers locally:
 
-- Centralized auth server handles user registration & login
-- JWT access tokens (15 min expiry) + refresh tokens (30 days)
-- User roles: standard user or admin
-- Password security: bcrypt hashing with 10 salt rounds
+```bash
+# Start all services
+./start-dev.sh
 
-## 📁 Key Features
-
-### Main Portal
-- User authentication & profile management
-- File browsing and management with upload/delete capabilities
-- Storage quota tracking
-
-### File Drop
-- Simple file upload & sharing
-- Direct file download access
-- File listing and deletion
-
-### Finance Tracker
-- Track expenses and income
-- Financial statistics & reports
-- Personal budget management
-
-## 🛠️ Configuration
-
-### Environment Variables
-
-Create `.env` in `NodeJsBackend/` with:
-
-```env
-ACCESS_TOKEN_SECRET=<your-access-token-secret>
-REFRESH_TOKEN_SECRET=<your-refresh-token-secret>
+# Stop all services
+./stop-dev.sh
 ```
 
-:3 ✨
+**Local Ports:**
+- Main Portal: `http://localhost:5173`
+- Drop Portal: `http://localhost:5174`
+- Finance Portal: `http://localhost:5175`
+- Auth API: `http://localhost:3000`
+- Finance API: `http://localhost:3001`
+- Drop API: `http://localhost:3002`
+
+---
+
+### 2. Production Deployment
+
+To build and deploy all container images to the Docker registry:
+
+```bash
+# Deploy all containers with image pushing
+echo "y" | ./update_all.sh
+```
+
+---
+
+## 👤 Author
+
+**Gian Gaudenz**
+- GitHub: [@GianUwU](https://github.com/GianUwU)
+- Email: [gian@gaudi.ch](mailto:gian@gaudi.ch)
+- Website: [gian.ink](https://gian.ink)

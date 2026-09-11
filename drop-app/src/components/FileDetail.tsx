@@ -9,8 +9,11 @@ import {
   isImage,
   isVideo,
   isAudio,
-  isSrt,
+  isPdf,
+  isTextOrCode,
+  isSubtitle,
   findMatchingSubtitleFilename,
+  getFileCategory,
 } from '../utils/fileUtils'
 import type { FileInfo, BatchInfo } from '../types'
 import '../FileDetail.css'
@@ -29,9 +32,20 @@ function FileDetail({ fileId }: FileDetailProps) {
   const [deleteStatus, setDeleteStatus] = useState<string>('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [copyStatus, setCopyStatus] = useState<string>('')
+  
+  // Subtitle state
   const [subtitleTrackUrl, setSubtitleTrackUrl] = useState<string | null>(null)
   const [subtitleFilename, setSubtitleFilename] = useState<string | null>(null)
   const [subtitleLoading, setSubtitleLoading] = useState(false)
+
+  // Text preview state
+  const [textContent, setTextContent] = useState<string | null>(null)
+  const [textLoading, setTextLoading] = useState(false)
+  const [textError, setTextError] = useState<string | null>(null)
+  const [textCopied, setTextCopied] = useState(false)
+
+  // Image load error state
+  const [imageError, setImageError] = useState(false)
 
   const sortFilesByName = (files: FileInfo[]): FileInfo[] => {
     return [...files].sort((a, b) =>
@@ -60,6 +74,53 @@ function FileDetail({ fileId }: FileDetailProps) {
     loadFileDetails()
   }, [fileId])
 
+  const activeDisplayFile = selectedFile || file || (batch ? batch.files[0] : null)
+
+  // Load text/code preview when selected file is text
+  useEffect(() => {
+    setImageError(false)
+    setTextContent(null)
+    setTextError(null)
+
+    if (!activeDisplayFile) return
+
+    const isText = isTextOrCode(activeDisplayFile.original_filename, activeDisplayFile.file_type)
+    if (!isText) return
+
+    // Limit text fetching to files under 10MB to avoid freezing
+    if (activeDisplayFile.file_size > 10 * 1024 * 1024) {
+      setTextError('File is too large for in-browser text preview. Please download to view.')
+      return
+    }
+
+    let isMounted = true
+    setTextLoading(true)
+
+    fetch(getUploadUrl(activeDisplayFile.filename))
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.text()
+      })
+      .then((text) => {
+        if (isMounted) {
+          setTextContent(text)
+          setTextLoading(false)
+        }
+      })
+      .catch((err) => {
+        if (isMounted) {
+          console.error('Failed to load text preview:', err)
+          setTextError('Failed to load text preview.')
+          setTextLoading(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [activeDisplayFile?.id, activeDisplayFile?.filename])
+
+  // Subtitle track preparation for video
   useEffect(() => {
     let objectUrlToRevoke: string | null = null
     let isMounted = true
@@ -100,8 +161,9 @@ function FileDetail({ fileId }: FileDetailProps) {
           throw new Error(`Subtitle fetch failed (${response.status})`)
         }
 
-        const srtContent = await response.text()
-        const vttContent = srtToVtt(srtContent)
+        const rawContent = await response.text()
+        const isAlreadyVtt = isSubtitle(matchedSubtitleFile?.original_filename) && matchedSubtitleFile?.original_filename.toLowerCase().endsWith('.vtt')
+        const vttContent = isAlreadyVtt ? rawContent : srtToVtt(rawContent)
         const vttBlob = new Blob([vttContent], { type: 'text/vtt' })
         const vttObjectUrl = URL.createObjectURL(vttBlob)
         objectUrlToRevoke = vttObjectUrl
@@ -153,7 +215,7 @@ function FileDetail({ fileId }: FileDetailProps) {
           ...data,
           files: sortedFiles,
         })
-        setSelectedFile(sortedFiles[0]) // Select first file by default
+        setSelectedFile(sortedFiles[0])
       } else {
         setFile(data)
       }
@@ -173,8 +235,8 @@ function FileDetail({ fileId }: FileDetailProps) {
     if (!file && !batch) return
 
     try {
-      const fileId = file ? file.id : batch!.files[0].id
-      const response = await fetch(`/files/${fileId}`, {
+      const targetId = file ? file.id : batch!.files[0].id
+      const response = await fetch(`/files/${targetId}`, {
         method: 'DELETE',
         credentials: 'include'
       })
@@ -207,12 +269,59 @@ function FileDetail({ fileId }: FileDetailProps) {
     setTimeout(() => setCopyStatus(''), 3000)
   }
 
+  const triggerDownload = (url: string, filename: string) => {
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.style.display = 'none'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handleBatchDownloadAll = () => {
+    if (!batch || batch.files.length === 0) return
+    
+    batch.files.forEach((f, index) => {
+      setTimeout(() => {
+        triggerDownload(`/files/${f.id}/now`, f.original_filename)
+      }, index * 300)
+    })
+  }
+
   const renderFilePreview = (previewFile: FileInfo, batchFiles?: FileInfo[]) => {
-    if (isImage(previewFile.filename)) {
-      return <img src={getUploadUrl(previewFile.filename)} alt={previewFile.original_filename} />
+    const filename = previewFile.original_filename || previewFile.filename
+    const mimeType = previewFile.file_type
+
+    // Image Preview
+    if (isImage(filename, mimeType)) {
+      if (imageError) {
+        return (
+          <div className="preview-fallback-box">
+            <span className="fallback-icon">🖼️</span>
+            <p>Image preview could not be displayed</p>
+            <a href={`/files/${previewFile.id}/now`} className="btn-download-preview">
+              ⬇️ Download Image
+            </a>
+          </div>
+        )
+      }
+
+      return (
+        <div className="media-preview-wrapper image-preview-wrapper">
+          <img 
+            key={previewFile.id}
+            src={getUploadUrl(previewFile.filename)} 
+            alt={previewFile.original_filename}
+            onError={() => setImageError(true)}
+            loading="lazy"
+          />
+        </div>
+      )
     }
 
-    if (isVideo(previewFile.original_filename, previewFile.file_type)) {
+    // Video Preview
+    if (isVideo(filename, mimeType)) {
       const canUseBatchSubtitles = Boolean(batchFiles)
 
       return (
@@ -222,6 +331,7 @@ function FileDetail({ fileId }: FileDetailProps) {
             controls
             className="media-preview-video"
             preload="metadata"
+            playsInline
             onLoadedMetadata={(event) => {
               const trackList = event.currentTarget.textTracks
               if (trackList && trackList.length > 0) {
@@ -258,13 +368,14 @@ function FileDetail({ fileId }: FileDetailProps) {
       )
     }
 
-    if (isAudio(previewFile.original_filename, previewFile.file_type)) {
+    // Audio Preview
+    if (isAudio(filename, mimeType)) {
       return (
-        <div className="media-preview-wrapper">
+        <div className="media-preview-wrapper audio-wrapper">
           <div className="file-icon-large audio-icon-large">
             <div className="icon">🎵</div>
           </div>
-          <audio controls className="media-preview-audio" preload="metadata">
+          <audio key={previewFile.id} controls className="media-preview-audio" preload="metadata">
             <source src={getUploadUrl(previewFile.filename)} type={previewFile.file_type || undefined} />
             Your browser does not support audio playback.
           </audio>
@@ -272,34 +383,85 @@ function FileDetail({ fileId }: FileDetailProps) {
       )
     }
 
+    // PDF Preview
+    if (isPdf(filename, mimeType)) {
+      return (
+        <div className="pdf-preview-container">
+          <iframe
+            key={previewFile.id}
+            src={getUploadUrl(previewFile.filename)}
+            title={previewFile.original_filename}
+            className="pdf-preview-frame"
+          />
+        </div>
+      )
+    }
+
+    // Text / Code Preview
+    if (isTextOrCode(filename, mimeType)) {
+      return (
+        <div className="text-preview-container">
+          <div className="text-preview-header">
+            <span className="text-preview-label">📄 Text / Code Preview</span>
+            {textContent && (
+              <button
+                type="button"
+                className="btn-copy-code"
+                onClick={() => {
+                  navigator.clipboard.writeText(textContent)
+                  setTextCopied(true)
+                  setTimeout(() => setTextCopied(false), 2000)
+                }}
+              >
+                {textCopied ? '✅ Copied!' : '📋 Copy Text'}
+              </button>
+            )}
+          </div>
+          {textLoading ? (
+            <div className="text-preview-loading">Loading text preview...</div>
+          ) : textError ? (
+            <div className="text-preview-error">{textError}</div>
+          ) : (
+            <pre className="text-preview-content">
+              <code>{textContent}</code>
+            </pre>
+          )}
+        </div>
+      )
+    }
+
+    // Fallback Generic Icon
+    const ext = previewFile.original_filename.split('.').pop()?.toUpperCase() || 'FILE'
     return (
       <div className="file-icon-large">
-        <div className="icon">📄</div>
+        <div className="icon">
+          {previewFile.file_type?.includes('zip') || previewFile.original_filename.match(/\.(zip|rar|7z|tar|gz)$/i) ? '📦' : '📄'}
+        </div>
         <div className="extension">
-          {previewFile.original_filename.split('.').pop()?.toUpperCase()}
+          {ext}
         </div>
       </div>
     )
   }
 
   const getBatchFileIcon = (batchFile: FileInfo) => {
-    if (isImage(batchFile.filename)) {
-      return '🖼️'
+    const category = getFileCategory(batchFile.original_filename, batchFile.file_type)
+    switch (category) {
+      case 'image':
+        return '🖼️'
+      case 'video':
+        return '🎬'
+      case 'audio':
+        return '🎵'
+      case 'pdf':
+        return '📕'
+      case 'text':
+        return isSubtitle(batchFile.original_filename) ? '💬' : '📝'
+      case 'archive':
+        return '📦'
+      default:
+        return '📄'
     }
-
-    if (isVideo(batchFile.original_filename, batchFile.file_type)) {
-      return '🎬'
-    }
-
-    if (isAudio(batchFile.original_filename, batchFile.file_type)) {
-      return '🎵'
-    }
-
-    if (isSrt(batchFile.original_filename)) {
-      return '💬'
-    }
-
-    return '📄'
   }
 
   if (loading) {
@@ -321,7 +483,7 @@ function FileDetail({ fileId }: FileDetailProps) {
     )
   }
 
-  // Render batch view if this is a batch upload
+  // Render batch view
   if (batch) {
     const totalSize = batch.files.reduce((sum, f) => sum + f.file_size, 0)
     const firstFile = batch.files[0]
@@ -343,7 +505,7 @@ function FileDetail({ fileId }: FileDetailProps) {
             <div className="preview-filename">{displayFile.original_filename}</div>
             <div className="preview-filesize">{formatFileSize(displayFile.file_size)}</div>
             <button 
-              onClick={() => window.location.href = `/files/${displayFile.id}/now`}
+              onClick={() => triggerDownload(`/files/${displayFile.id}/now`, displayFile.original_filename)}
               className="btn-download-preview"
             >
               ⬇️ Download This File
@@ -410,7 +572,7 @@ function FileDetail({ fileId }: FileDetailProps) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        window.location.href = `/files/${f.id}/now`
+                        triggerDownload(`/files/${f.id}/now`, f.original_filename)
                       }}
                       className="btn-download-tiny"
                       title="Download this file"
@@ -424,13 +586,7 @@ function FileDetail({ fileId }: FileDetailProps) {
 
             <div className="file-actions-detail">
               <button
-                onClick={() => {
-                  batch.files.forEach((f, index) => {
-                    setTimeout(() => {
-                      window.location.href = `/files/${f.id}/now`
-                    }, index * 100)
-                  })
-                }}
+                onClick={handleBatchDownloadAll}
                 className="btn-download-all"
               >
                 📦 Download All Files
@@ -543,7 +699,7 @@ function FileDetail({ fileId }: FileDetailProps) {
 
           <div className="file-actions-detail">
             <button 
-              onClick={() => window.location.href = `/files/${file.id}/now`}
+              onClick={() => triggerDownload(`/files/${file.id}/now`, file.original_filename)}
               className="btn-download-large"
             >
               ⬇️ Download File
@@ -601,3 +757,4 @@ function FileDetail({ fileId }: FileDetailProps) {
 }
 
 export default FileDetail
+

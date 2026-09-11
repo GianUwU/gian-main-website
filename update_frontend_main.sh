@@ -1,12 +1,57 @@
 #!/bin/bash
-# update_frontend_main.sh - Build and deploy main-app to gian.ink
+# update_frontend_main.sh - Build main-app Docker image for registry upload
 
-# Navigate to the main-app directory
-cd ~/webserver/main-app/ || exit
+set -euo pipefail
 
-npm run build
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_DIR="$SCRIPT_DIR/main-app"
+ENV_FILE="${ENV_FILE:-$SCRIPT_DIR/.env.deploy}"
 
-# Copy the build files directly to the server
-scp -r dist/* gian@gian.ink:/var/www/gian.ink/html/
+if [[ -f "$ENV_FILE" ]]; then
+	set -a
+	# shellcheck disable=SC1090
+	source "$ENV_FILE"
+	set +a
+fi
 
-echo "Main-app updated on gian.ink."
+REGISTRY_HOST="${REGISTRY_HOST:-registry.gian.ink}"
+REGISTRY_USERNAME="${REGISTRY_USERNAME:-}"
+REGISTRY_PASSWORD="${REGISTRY_PASSWORD:-}"
+
+IMAGE_NAME="${IMAGE_NAME:-${REGISTRY_HOST}/gian/main-frontend}"
+IMAGE_TAG="${IMAGE_TAG:-$(date +%Y%m%d-%H%M%S)}"
+PUSH_IMAGE="${PUSH_IMAGE:-false}"
+
+cd "$APP_DIR"
+
+# Log in to Docker registry
+if [[ "$PUSH_IMAGE" == "true" ]]; then
+	if [[ -z "$REGISTRY_USERNAME" || -z "$REGISTRY_PASSWORD" ]]; then
+	echo "Missing REGISTRY_USERNAME or REGISTRY_PASSWORD in $ENV_FILE"
+	exit 1
+	fi
+	echo "Logging in to Docker registry..."
+	echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY_HOST" -u "$REGISTRY_USERNAME" --password-stdin
+fi
+
+echo "Building Docker image..."
+echo "Image: ${IMAGE_NAME}:${IMAGE_TAG}"
+
+docker build \
+	-t "${IMAGE_NAME}:${IMAGE_TAG}" \
+	-t "${IMAGE_NAME}:latest" \
+	.
+
+echo "Docker image created successfully."
+
+if [[ "$PUSH_IMAGE" == "true" ]]; then
+	echo "Pushing tags to registry..."
+	docker push "${IMAGE_NAME}:${IMAGE_TAG}"
+	docker push "${IMAGE_NAME}:latest"
+	echo "Image pushed to registry."
+else
+	echo "Skipping push (PUSH_IMAGE=${PUSH_IMAGE})."
+	echo "To push manually, run:"
+	echo "  docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+	echo "  docker push ${IMAGE_NAME}:latest"
+fi

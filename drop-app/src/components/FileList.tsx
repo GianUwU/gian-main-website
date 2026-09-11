@@ -96,76 +96,90 @@ export default function FileList({
           {files.length === 0 && !loading ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>No files uploaded yet.</div>
           ) : (
-            files.map(file => (
-              <div key={file.id} className="file-card">
-                <a href={getAppUrl(`/view/${file.id}`)} className="file-preview-link">
-                  <div className="file-preview">
-                    {file.total_files && file.total_files > 1 ? (
-                      <div className="file-icon batch-icon">
-                        📁
-                        <div style={{ fontSize: '14px', marginTop: '5px', fontWeight: 'bold' }}>
-                          {file.total_files} files
+            files.map(file => {
+              const filename = file.original_filename || file.filename
+              const ext = filename.split('.').pop()?.toUpperCase() || 'FILE'
+              const isImg = isImage(filename, file.file_type)
+
+              return (
+                <div key={file.id} className="file-card">
+                  <a href={getAppUrl(`/view/${file.id}`)} className="file-preview-link">
+                    <div className="file-preview">
+                      {file.total_files && file.total_files > 1 ? (
+                        <div className="file-icon batch-icon">
+                          📁
+                          <div style={{ fontSize: '14px', marginTop: '5px', fontWeight: 'bold' }}>
+                            {file.total_files} files
+                          </div>
                         </div>
-                      </div>
-                    ) : isImage(file.filename) ? (
-                      <img src={getUploadUrl(file.filename)} alt={file.original_filename} />
-                    ) : (
-                      <div className="file-icon">
-                        📄
-                        <div style={{ fontSize: '12px', marginTop: '5px' }}>
-                          {file.original_filename.split('.').pop()?.toUpperCase()}
+                      ) : isImg ? (
+                        <img 
+                          src={getUploadUrl(file.filename)} 
+                          alt={file.original_filename} 
+                          loading="lazy"
+                          onError={(e) => {
+                            // Fallback if thumbnail fails to load
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <div className="file-icon">
+                          {ext === 'PDF' ? '📕' : file.file_type?.startsWith('video/') ? '🎬' : file.file_type?.startsWith('audio/') ? '🎵' : '📄'}
+                          <div style={{ fontSize: '12px', marginTop: '5px' }}>
+                            {ext}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </a>
-                <div className="file-info">
-                  <a href={getAppUrl(`/view/${file.id}`)} className="file-name-link">
-                    {file.description ? (
-                      <div className="file-name" title={file.description}>
-                        {file.description.length > 60 ? `${file.description.substring(0, 60)}...` : file.description}
-                      </div>
-                    ) : (
-                      <div className="file-name">{file.original_filename}</div>
-                    )}
-                  </a>
-                  <div className="file-original-name">
-                    {file.total_files && file.total_files > 1 ? (
-                      `📁 ${file.total_files} files`
-                    ) : (
-                      file.original_filename
-                    )}
-                  </div>
-                  <div className="file-meta">
-                    <span className="file-user">👤 {file.username}</span>
-                    <span className="file-size">{formatFileSize(file.total_size || file.file_size)}</span>
-                  </div>
-                  {file.expires_at && (
-                    <div className="file-expires">
-                      ⏱️ {formatExpiresIn(file.expires_at)}
+                      )}
                     </div>
-                  )}
-                  <div className="file-actions">
-                    <a 
-                      href={getUploadUrl(file.filename)} 
-                      download={file.original_filename}
-                      className="btn-download"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      ⬇️ Download
+                  </a>
+                  <div className="file-info">
+                    <a href={getAppUrl(`/view/${file.id}`)} className="file-name-link">
+                      {file.description ? (
+                        <div className="file-name" title={file.description}>
+                          {file.description.length > 60 ? `${file.description.substring(0, 60)}...` : file.description}
+                        </div>
+                      ) : (
+                        <div className="file-name">{file.original_filename}</div>
+                      )}
                     </a>
-                    {isAuthenticated && (file.username === username || isAdmin) && (
-                      <button 
-                        onClick={() => handleDeleteClick(file.id, file.original_filename, file.total_files)}
-                        className="btn-delete"
-                      >
-                        🗑️ Delete
-                      </button>
+                    <div className="file-original-name">
+                      {file.total_files && file.total_files > 1 ? (
+                        `📁 ${file.total_files} files`
+                      ) : (
+                        file.original_filename
+                      )}
+                    </div>
+                    <div className="file-meta">
+                      <span className="file-user">👤 {file.username}</span>
+                      <span className="file-size">{formatFileSize(file.total_size || file.file_size)}</span>
+                    </div>
+                    {file.expires_at && (
+                      <div className="file-expires">
+                        ⏱️ {formatExpiresIn(file.expires_at)}
+                      </div>
                     )}
+                    <div className="file-actions">
+                      <a 
+                        href={`/files/${file.id}/now`} 
+                        className="btn-download"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Download file"
+                      >
+                        ⬇️ Download
+                      </a>
+                      {isAuthenticated && (file.username === username || isAdmin) && (
+                        <button 
+                          onClick={() => handleDeleteClick(file.id, file.original_filename, file.total_files)}
+                          className="btn-delete"
+                        >
+                          🗑️ Delete
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
           {loading && <div style={{ textAlign: 'center', padding: '20px' }}>Loading...</div>}
         </div>

@@ -619,3 +619,115 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
+
+/* PDF Preview */
+.pdf-preview-container {
+  width: 100%;
+  height: 500px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+  background: #525659;
+}
+
+.pdf-preview-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Text / Code Preview */
+.text-preview-container {
+  width: 100%;
+  max-width: 100%;
+  background: #1e293b;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.text-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: #0f172a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.text-preview-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.btn-copy-code {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-copy-code:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.text-preview-content {
+  margin: 0;
+  padding: 16px;
+  max-height: 440px;
+  overflow-y: auto;
+  overflow-x: auto;
+  font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #f8fafc;
+  background: #1e293b;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.text-preview-loading,
+.text-preview-error {
+  padding: 32px 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.text-preview-error {
+  color: #f87171;
+}
+
+/* Preview Fallback Box */
+.preview-fallback-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  gap: 12px;
+}
+
+.preview-fallback-box .fallback-icon {
+  font-size: 3rem;
+}
+
+.preview-fallback-box p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+

@@ -35,7 +35,7 @@ export default function MonthDetailModal({
 
   // Find transactions for this month (expenses only)
   const monthTransactions = transactions.filter(
-    (tx) => tx.date.slice(0, 7) === selectedMonth.key && tx.type !== "income"
+    (tx) => (tx.date ?? "").slice(0, 7) === selectedMonth.key && tx.type !== "income"
   );
   const transactionCount = monthTransactions.length;
   const averageTransaction =
@@ -44,7 +44,7 @@ export default function MonthDetailModal({
   // Calculate total earnings for this month
   const monthEarnings = transactions
     .filter(
-      (tx) => tx.date.slice(0, 7) === selectedMonth.key && tx.type === "income"
+      (tx) => (tx.date ?? "").slice(0, 7) === selectedMonth.key && tx.type === "income"
     )
     .reduce((sum, tx) => sum + tx.amount, 0);
 

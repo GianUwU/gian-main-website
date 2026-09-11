@@ -122,8 +122,8 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
               <div className="drop-zone-empty">
                 <div className="upload-icon-large">📁</div>
                 <div className="drop-zone-text">
-                  <strong>Drag & drop files here or click to browse</strong>
-                  <span>Multiple files supported</span>
+                  <strong>Drag & drop files here, click to browse, or paste</strong>
+                  <span>Screenshots, images, text, and multiple files supported</span>
                 </div>
               </div>
             )}

@@ -125,23 +125,63 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const login = async (username: string, password: string) => {
-    void username
-    void password
-    // Redirect to main login page with redirect URL
-    const redirectUrl = encodeURIComponent(window.location.origin + window.location.pathname);
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const mainAppUrl = isLocalhost ? 'http://localhost:5173' : 'https://gian.ink';
-    window.location.href = `${mainAppUrl}/login?redirect=${redirectUrl}`;
+    setError(null);
+    try {
+      const response = await fetch("/users/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Invalid credentials");
+      }
+
+      const userInfo = await fetchCurrentUser();
+      markAuthenticated(true);
+      setUsername(userInfo?.username || username);
+      setIsAdmin(Boolean(userInfo?.is_admin));
+
+      // Check for redirect URL in query parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectUrl = urlParams.get('redirect');
+      if (redirectUrl) {
+        console.log("✅ Redirecting to:", redirectUrl);
+        window.location.href = redirectUrl;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Login failed";
+      setError(message);
+      throw err;
+    }
   };
 
   const register = async (username: string, password: string) => {
-    void username
-    void password
-    // Redirect to main login page with redirect URL
-    const redirectUrl = encodeURIComponent(window.location.origin + window.location.pathname);
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const mainAppUrl = isLocalhost ? 'http://localhost:5173' : 'https://gian.ink';
-    window.location.href = `${mainAppUrl}/login?redirect=${redirectUrl}`;
+    setError(null);
+    try {
+      const response = await fetch("/users/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Registration failed");
+      }
+
+      // Auto-login after registration (will handle redirect)
+      await login(username, password);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Registration failed";
+      setError(message);
+      throw err;
+    }
   };
 
   const logout = async () => {

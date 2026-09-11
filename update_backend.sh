@@ -1,18 +1,57 @@
 #!/bin/bash
-# update_backend.sh - Deploy Dockerized Node backends to server
+# update_backend.sh - Build backend Docker image for registry upload
 
-cd ~/webserver/NodeJsBackend/ || exit
+set -euo pipefail
 
-echo "Copying Node backend files..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="$SCRIPT_DIR/NodeJsBackend"
+ENV_FILE="${ENV_FILE:-$SCRIPT_DIR/.env.deploy}"
 
-ssh gian@gian.ink 'mkdir -p ~/NodeJsBackend/Databases ~/NodeJsBackend/uploads'
+if [[ -f "$ENV_FILE" ]]; then
+	set -a
+	# shellcheck disable=SC1090
+	source "$ENV_FILE"
+	set +a
+fi
 
-# Copy all necessary Node backend files to the server
-scp authServer.js financeServer.js dropServer.js db.js package.json package-lock.json Dockerfile docker-compose.yml .dockerignore .env.example manage_accounts.sh gian@gian.ink:~/NodeJsBackend/
+REGISTRY_HOST="${REGISTRY_HOST:-registry.gian.ink}"
+REGISTRY_USERNAME="${REGISTRY_USERNAME:-}"
+REGISTRY_PASSWORD="${REGISTRY_PASSWORD:-}"
 
-echo "Restarting Node backend services..."
+IMAGE_NAME="${IMAGE_NAME:-${REGISTRY_HOST}/gian/nodejs-backend}"
+IMAGE_TAG="${IMAGE_TAG:-$(date +%Y%m%d-%H%M%S)}"
+PUSH_IMAGE="${PUSH_IMAGE:-false}"
 
-# Restart Node backend services on the server
-ssh gian@gian.ink 'cd ~/NodeJsBackend && docker compose down && docker compose up --build -d'
+cd "$BACKEND_DIR"
 
-echo "Node backend services updated."
+echo "Building Docker image..."
+echo "Image: ${IMAGE_NAME}:${IMAGE_TAG}"
+
+docker build \
+	-t "${IMAGE_NAME}:${IMAGE_TAG}" \
+	-t "${IMAGE_NAME}:latest" \
+	.
+
+echo "Docker image created successfully."
+
+# Log in to Docker registry
+if [[ "$PUSH_IMAGE" == "true" ]]; then
+	if [[ -z "$REGISTRY_USERNAME" || -z "$REGISTRY_PASSWORD" ]]; then
+	echo "Missing REGISTRY_USERNAME or REGISTRY_PASSWORD in $ENV_FILE"
+	exit 1
+	fi
+	echo "Logging in to Docker registry..."
+	echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY_HOST" -u "$REGISTRY_USERNAME" --password-stdin
+fi
+
+if [[ "$PUSH_IMAGE" == "true" ]]; then
+	echo "Pushing tags to registry..."
+	docker push "${IMAGE_NAME}:${IMAGE_TAG}"
+	docker push "${IMAGE_NAME}:latest"
+	echo "Image pushed to registry."
+else
+	echo "Skipping push (PUSH_IMAGE=${PUSH_IMAGE})."
+	echo "To push manually, run:"
+	echo "  docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+	echo "  docker push ${IMAGE_NAME}:latest"
+fi

@@ -1,8 +1,4 @@
-/**
- * Custom hook for managing file upload state and operations
- */
-
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAuth } from '../AuthContext'
 import { getAppUrl } from '../utils/fileUtils'
 import type { FileInfo } from '../types'
@@ -129,6 +125,80 @@ export const useFileUpload = (): UseFileUploadResult => {
       setStatus('')
     }
   }, [uploading, validateFiles])
+
+  const handlePaste = useCallback((e: ClipboardEvent) => {
+    if (uploading || !isAuthenticated) return
+
+    const activeEl = document.activeElement
+    const isTextInput = activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement
+
+    const clipboardData = e.clipboardData
+    if (!clipboardData) return
+
+    const items = clipboardData.items
+    const files: File[] = []
+
+    if (items && items.length > 0) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i]
+        if (item.kind === 'file') {
+          const file = item.getAsFile()
+          if (file) {
+            if (file.name === 'image.png' || file.name === 'blob' || !file.name) {
+              const ext = file.type.split('/')[1]?.replace('+xml', '') || 'png'
+              const now = new Date()
+              const pad = (n: number) => String(n).padStart(2, '0')
+              const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
+              const renamedFile = new File([file], `screenshot_${timestamp}.${ext}`, { type: file.type })
+              files.push(renamedFile)
+            } else {
+              files.push(file)
+            }
+          }
+        }
+      }
+    } else if (clipboardData.files && clipboardData.files.length > 0) {
+      files.push(...Array.from(clipboardData.files))
+    }
+
+    if (files.length > 0) {
+      e.preventDefault()
+      const validation = validateFiles(files)
+      if (!validation.valid) {
+        setStatus(validation.error!)
+        return
+      }
+
+      setSelectedFiles(prev => [...prev, ...files])
+      setStatus(`📋 Added ${files.length} file${files.length > 1 ? 's' : ''} from clipboard!`)
+      setTimeout(() => {
+        setStatus(prev => prev.startsWith('📋 Added') ? '' : prev)
+      }, 3000)
+    } else if (!isTextInput && clipboardData.getData('text')) {
+      const text = clipboardData.getData('text')
+      if (text.trim().length > 0) {
+        e.preventDefault()
+        const now = new Date()
+        const pad = (n: number) => String(n).padStart(2, '0')
+        const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
+        const textBlob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+        const textFile = new File([textBlob], `clipboard_${timestamp}.txt`, { type: 'text/plain' })
+        
+        setSelectedFiles(prev => [...prev, textFile])
+        setStatus('📋 Pasted text added as clipboard.txt!')
+        setTimeout(() => {
+          setStatus(prev => prev.startsWith('📋 Pasted') ? '' : prev)
+        }, 3000)
+      }
+    }
+  }, [uploading, isAuthenticated, validateFiles])
+
+  useEffect(() => {
+    window.addEventListener('paste', handlePaste)
+    return () => {
+      window.removeEventListener('paste', handlePaste)
+    }
+  }, [handlePaste])
 
   const handleSubmit = useCallback(async (
     e: React.FormEvent,

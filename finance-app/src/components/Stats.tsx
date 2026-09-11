@@ -49,7 +49,7 @@ export default function Stats() {
       })
       .then((data: Transaction[]) => {
         if (!mounted) return;
-        setTransactions(data || []);
+        setTransactions(Array.isArray(data) ? data : []);
       })
       .catch((err) => {
         if (!mounted) return;
@@ -66,7 +66,11 @@ export default function Stats() {
   }, [token]);
 
   const availableYears = Array.from(
-    new Set(transactions.map((tx) => parseInt(tx.date.slice(0, 4))))
+    new Set(
+      transactions
+        .map((tx) => parseInt((tx.date ?? "").slice(0, 4), 10))
+        .filter((year) => Number.isFinite(year))
+    )
   ).sort((a, b) => b - a);
 
   if (availableYears.length === 0) {
@@ -102,7 +106,7 @@ export default function Stats() {
     let monthlyExpenseTotal = 0;
     
     transactions.forEach((tx) => {
-      const key = tx.date.slice(0, 7);
+      const key = (tx.date ?? "").slice(0, 7);
       if (key !== m.key) return;
       
       if (tx.type === "income") {

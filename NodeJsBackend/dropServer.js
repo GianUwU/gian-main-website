@@ -211,6 +211,56 @@ function parseIsPrivate(value) {
     return false
 }
 
+const MIME_MAP = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.svg': 'image/svg+xml',
+    '.bmp': 'image/bmp',
+    '.ico': 'image/x-icon',
+    '.avif': 'image/avif',
+    '.heic': 'image/heic',
+    '.mp4': 'video/mp4',
+    '.webm': 'video/webm',
+    '.mov': 'video/quicktime',
+    '.mkv': 'video/x-matroska',
+    '.avi': 'video/x-msvideo',
+    '.mp3': 'audio/mpeg',
+    '.wav': 'audio/wav',
+    '.ogg': 'audio/ogg',
+    '.flac': 'audio/flac',
+    '.m4a': 'audio/mp4',
+    '.pdf': 'application/pdf',
+    '.txt': 'text/plain; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.md': 'text/markdown; charset=utf-8',
+    '.js': 'text/javascript; charset=utf-8',
+    '.ts': 'text/typescript; charset=utf-8',
+    '.py': 'text/x-python; charset=utf-8',
+    '.html': 'text/html; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.srt': 'text/plain; charset=utf-8',
+    '.vtt': 'text/vtt; charset=utf-8',
+    '.csv': 'text/csv; charset=utf-8',
+    '.zip': 'application/zip',
+    '.tar': 'application/x-tar',
+    '.gz': 'application/gzip',
+    '.7z': 'application/x-7z-compressed',
+}
+
+function inferMimeType(filename, rawMime) {
+    const ext = path.extname(filename || '').toLowerCase()
+    if (MIME_MAP[ext]) {
+        return MIME_MAP[ext]
+    }
+    if (rawMime && rawMime !== 'application/octet-stream') {
+        return rawMime
+    }
+    return 'application/octet-stream'
+}
+
 function randomId(length) {
     return crypto.randomBytes(Math.ceil(length)).toString('base64url').slice(0, length)
 }
@@ -400,6 +450,7 @@ app.post('/upload', authenticateAccessToken, (req, res, next) => {
             const inserted = []
             for (const file of files) {
                 const originalFilename = validateFilename(file.originalname)
+                const detectedMime = inferMimeType(originalFilename, file.mimetype)
                 const id = await generateUniqueFileId()
 
                 await runSql(
@@ -416,7 +467,7 @@ app.post('/upload', authenticateAccessToken, (req, res, next) => {
                         req.user.id,
                         uploadedAt,
                         file.size,
-                        file.mimetype || 'application/octet-stream',
+                        detectedMime,
                         isPrivate ? 1 : 0,
                         expiresAt,
                         batchId,
@@ -527,6 +578,27 @@ app.get('/files/:fileId/now', asyncHandler(async (req, res) => {
     }
 
     res.download(fullPath, fileRow.original_filename)
+}))
+
+app.get('/files/:fileId/raw', asyncHandler(async (req, res) => {
+    const fileRow = await getSql(
+        'SELECT filename, original_filename, file_type FROM files WHERE id = ?',
+        [req.params.fileId]
+    )
+
+    if (!fileRow) {
+        throw new ApiError(404, 'File not found')
+    }
+
+    const fullPath = path.join(UPLOAD_DIR, fileRow.filename)
+    if (!fs.existsSync(fullPath)) {
+        throw new ApiError(404, 'File not found on server')
+    }
+
+    const mime = inferMimeType(fileRow.original_filename, fileRow.file_type)
+    res.setHeader('Content-Type', mime)
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileRow.original_filename)}"`)
+    res.sendFile(fullPath, { acceptRanges: true })
 }))
 
 app.delete('/files/:fileId', authenticateAccessToken, asyncHandler(async (req, res) => {

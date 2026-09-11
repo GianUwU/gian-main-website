@@ -8,24 +8,40 @@ import type { FileInfo, ViewMode } from '../types'
 
 export const useFileList = () => {
   const [files, setFiles] = useState<FileInfo[]>([])
-  const [offset, setOffset] = useState(0)
   const [loading, setLoading] = useState(false)
   const [allLoaded, setAllLoaded] = useState(false)
   const [showMyFiles, setShowMyFiles] = useState(false)
   const [showAllFiles, setShowAllFiles] = useState(false)
+  
   const displayedFilesRef = useRef(new Set<string>())
+  const offsetRef = useRef(0)
+  const loadingRef = useRef(false)
+  const allLoadedRef = useRef(false)
+  const currentViewRef = useRef<ViewMode>('public')
   const limit = 15
 
-  const loadFiles = useCallback(async (viewMode: ViewMode = 'public') => {
-    if (loading || allLoaded) return
+  const fetchFilesForView = useCallback(async (viewMode: ViewMode, reset: boolean = false) => {
+    if (loadingRef.current) return
+    if (!reset && allLoadedRef.current) return
+
+    loadingRef.current = true
     setLoading(true)
 
+    if (reset) {
+      offsetRef.current = 0
+      allLoadedRef.current = false
+      setAllLoaded(false)
+      displayedFilesRef.current.clear()
+    }
+
+    const currentOffset = offsetRef.current
+
     try {
-      let endpoint = `/files?offset=${offset}&limit=${limit}`
+      let endpoint = `/files?offset=${currentOffset}&limit=${limit}`
       if (viewMode === 'my') {
-        endpoint = `/files/my?offset=${offset}&limit=${limit}`
+        endpoint = `/files/my?offset=${currentOffset}&limit=${limit}`
       } else if (viewMode === 'all') {
-        endpoint = `/files/all?offset=${offset}&limit=${limit}`
+        endpoint = `/files/all?offset=${currentOffset}&limit=${limit}`
       }
 
       const res = await fetchWithTokenRefresh(endpoint, { credentials: 'include' })
@@ -35,31 +51,43 @@ export const useFileList = () => {
       const fetchedFiles: FileInfo[] = await res.json()
 
       if (fetchedFiles.length === 0) {
+        allLoadedRef.current = true
         setAllLoaded(true)
+        if (reset) {
+          setFiles([])
+        }
         return
+      }
+
+      if (fetchedFiles.length < limit) {
+        allLoadedRef.current = true
+        setAllLoaded(true)
       }
 
       const newFiles = fetchedFiles.filter(file => !displayedFilesRef.current.has(file.id))
       newFiles.forEach(file => displayedFilesRef.current.add(file.id))
 
-      setFiles(prev => [...prev, ...newFiles])
-      setOffset(prev => prev + fetchedFiles.length)
+      offsetRef.current += fetchedFiles.length
+
+      if (reset) {
+        setFiles(newFiles)
+      } else {
+        setFiles(prev => [...prev, ...newFiles])
+      }
     } catch (e) {
       console.error('Error loading files:', e)
     } finally {
+      loadingRef.current = false
       setLoading(false)
     }
-  }, [loading, allLoaded, offset])
+  }, [limit])
 
   const switchView = useCallback((viewMode: ViewMode) => {
-    setFiles([])
-    setOffset(0)
-    setAllLoaded(false)
-    displayedFilesRef.current.clear()
+    currentViewRef.current = viewMode
     setShowMyFiles(viewMode === 'my')
     setShowAllFiles(viewMode === 'all')
-    setTimeout(() => loadFiles(viewMode), 0)
-  }, [loadFiles])
+    fetchFilesForView(viewMode, true)
+  }, [fetchFilesForView])
 
   const addFile = useCallback((file: FileInfo) => {
     setFiles(prev => [file, ...prev])
@@ -72,27 +100,30 @@ export const useFileList = () => {
   }, [])
 
   const getCurrentViewMode = useCallback((): ViewMode => {
-    return showMyFiles ? 'my' : (showAllFiles ? 'all' : 'public')
-  }, [showMyFiles, showAllFiles])
-
-  useEffect(() => {
-    loadFiles(getCurrentViewMode())
+    return currentViewRef.current
   }, [])
 
   useEffect(() => {
+    fetchFilesForView('public', true)
+  }, [fetchFilesForView])
+
+  useEffect(() => {
     const handleScroll = () => {
-      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100) {
-        loadFiles(getCurrentViewMode())
+      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 150) {
+        if (!loadingRef.current && !allLoadedRef.current) {
+          fetchFilesForView(currentViewRef.current, false)
+        }
       }
     }
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [loading, allLoaded, getCurrentViewMode, loadFiles])
+  }, [fetchFilesForView])
 
   return {
     files,
     loading,
+    allLoaded,
     showMyFiles,
     showAllFiles,
     switchView,
@@ -101,3 +132,4 @@ export const useFileList = () => {
     getCurrentViewMode
   }
 }
+
