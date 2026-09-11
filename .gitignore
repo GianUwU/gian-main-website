@@ -51,3 +51,7 @@ logs/
 # *.db
 # *.sqlite
 # *.sqlite3
+
+# Personal / Private assets
+flavia-app/src/assets/memory/
+flavia-app/src/assets/us.png
