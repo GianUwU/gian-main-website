@@ -139,7 +139,7 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
           />
 
           <textarea
-            placeholder="Add a description (optional)"
+            placeholder="Add a description (or type text here to upload directly as a .txt note)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
@@ -213,7 +213,7 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
           )}
           
           <button type="submit" disabled={uploading}>
-            {uploading ? 'Uploading...' : 'Upload'}
+            {uploading ? 'Uploading...' : selectedFiles.length === 0 && description.trim().length > 0 ? 'Upload Text Note' : 'Upload'}
           </button>
         </form>
 

@@ -157,8 +157,8 @@ function authenticateAccessToken(req, res, next) {
 
 function validateDescription(description) {
     const text = typeof description === 'string' ? description : ''
-    if (text.length > 1000) {
-        throw new ApiError(400, 'Description too long (max 1000 characters)')
+    if (text.length > 50000) {
+        throw new ApiError(400, 'Description too long (max 50000 characters)')
     }
 
     return text.replace(/<[^>]*>/g, '').trim()
@@ -426,13 +426,47 @@ app.post('/upload', authenticateAccessToken, (req, res, next) => {
             return next(err)
         }
 
+        const createdFiles = []
         try {
-            const files = Array.isArray(req.files) ? req.files : []
+            let files = Array.isArray(req.files) ? [...req.files] : []
+            const description = validateDescription(req.body.description)
+
             if (files.length === 0) {
-                throw new ApiError(400, 'Please select at least one file')
+                if (description && description.trim().length > 0) {
+                    const storedFilename = `${randomId(12)}.txt`
+                    const filePath = path.join(UPLOAD_DIR, storedFilename)
+                    await fs.promises.writeFile(filePath, description, 'utf8')
+                    const stats = await fs.promises.stat(filePath)
+
+                    const now = new Date()
+                    const pad = n => String(n).padStart(2, '0')
+                    const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
+                    const firstLine = description.trim().split('\n')[0].trim()
+                    const slug = firstLine
+                        .replace(/^https?:\/\//i, '')
+                        .replace(/[^a-zA-Z0-9_-]/g, '_')
+                        .replace(/_+/g, '_')
+                        .replace(/^_|_$/g, '')
+                        .slice(0, 30)
+                    const originalFilename = slug.length >= 2 ? `${slug}_${timestamp}.txt` : `note_${timestamp}.txt`
+
+                    const generatedFile = {
+                        fieldname: 'files',
+                        originalname: originalFilename,
+                        encoding: '7bit',
+                        mimetype: 'text/plain; charset=utf-8',
+                        destination: UPLOAD_DIR,
+                        filename: storedFilename,
+                        path: filePath,
+                        size: stats.size,
+                    }
+                    files = [generatedFile]
+                    createdFiles.push(filePath)
+                } else {
+                    throw new ApiError(400, 'Please select at least one file or enter a description')
+                }
             }
 
-            const description = validateDescription(req.body.description)
             const isPrivate = parseIsPrivate(req.body.is_private)
             const expirationDays = parseExpirationDays(req.body.expiration_days)
 
@@ -492,8 +526,9 @@ app.post('/upload', authenticateAccessToken, (req, res, next) => {
                 },
             })
         } catch (uploadErr) {
-            const files = Array.isArray(req.files) ? req.files : []
-            files.forEach(file => safeUnlink(file.path))
+            const filesToClean = Array.isArray(req.files) ? [...req.files] : []
+            filesToClean.forEach(file => safeUnlink(file.path))
+            createdFiles.forEach(filePath => safeUnlink(filePath))
             next(uploadErr)
         }
     })

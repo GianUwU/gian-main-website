@@ -193,6 +193,19 @@
   color: #213547;
 }
 
+.clickable-title-link {
+  color: #4f46e5;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.clickable-title-link:hover {
+  color: #3730a3;
+  opacity: 0.85;
+}
+
 .batch-description {
   margin: 0.5rem 0 0 0;
   color: #666;

@@ -15,6 +15,7 @@ import {
   findMatchingSubtitleFilename,
   getFileCategory,
 } from '../utils/fileUtils'
+import { renderTextWithLinks } from '../utils/linkify'
 import type { FileInfo, BatchInfo } from '../types'
 import '../FileDetail.css'
 
@@ -502,7 +503,7 @@ function FileDetail({ fileId }: FileDetailProps) {
           {/* Left side - File preview */}
           <div className="file-detail-preview">
             {renderFilePreview(displayFile, batch.files)}
-            <div className="preview-filename">{displayFile.original_filename}</div>
+            <div className="preview-filename">{renderTextWithLinks(displayFile.original_filename)}</div>
             <div className="preview-filesize">{formatFileSize(displayFile.file_size)}</div>
             <button 
               onClick={() => triggerDownload(`/files/${displayFile.id}/now`, displayFile.original_filename)}
@@ -519,7 +520,7 @@ function FileDetail({ fileId }: FileDetailProps) {
               <div>
                 <h1 className="file-title">Batch Upload</h1>
                 <p className="batch-description">
-                  {firstFile.description || `${batch.files.length} files uploaded together`}
+                  {renderTextWithLinks(firstFile.description || `${batch.files.length} files uploaded together`)}
                 </p>
               </div>
             </div>
@@ -565,7 +566,7 @@ function FileDetail({ fileId }: FileDetailProps) {
                         {getBatchFileIcon(f)}
                       </span>
                       <div className="file-info-compact">
-                        <span className="file-name-compact">{f.original_filename}</span>
+                        <span className="file-name-compact">{renderTextWithLinks(f.original_filename)}</span>
                         <span className="file-size-compact">{formatFileSize(f.file_size)}</span>
                       </div>
                     </div>
@@ -663,12 +664,12 @@ function FileDetail({ fileId }: FileDetailProps) {
         </div>
 
         <div className="file-detail-info">
-          <h1 className="file-title">{file.original_filename}</h1>
+          <h1 className="file-title">{renderTextWithLinks(file.original_filename)}</h1>
           
           {file.description && (
             <div className="file-description-section">
               <h3>Description</h3>
-              <p>{file.description}</p>
+              <p>{renderTextWithLinks(file.description)}</p>
             </div>
           )}
 

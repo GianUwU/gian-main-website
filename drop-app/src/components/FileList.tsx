@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useAuth } from '../AuthContext'
 import { fetchWithTokenRefresh } from '../utils/fetchWithTokenRefresh'
 import { formatFileSize, formatExpiresIn, getAppUrl, getUploadUrl, isImage } from '../utils/fileUtils'
+import { renderTextWithLinks } from '../utils/linkify'
 import type { FileInfo } from '../types'
 
 interface FileListProps {
@@ -133,20 +134,17 @@ export default function FileList({
                     </div>
                   </a>
                   <div className="file-info">
-                    <a href={getAppUrl(`/view/${file.id}`)} className="file-name-link">
-                      {file.description ? (
-                        <div className="file-name" title={file.description}>
-                          {file.description.length > 60 ? `${file.description.substring(0, 60)}...` : file.description}
-                        </div>
-                      ) : (
-                        <div className="file-name">{file.original_filename}</div>
-                      )}
-                    </a>
+                    <div className="file-name" title={file.description || file.original_filename}>
+                      {renderTextWithLinks(file.description || file.original_filename, {
+                        fallbackLink: getAppUrl(`/view/${file.id}`),
+                        className: 'file-name-link',
+                      })}
+                    </div>
                     <div className="file-original-name">
                       {file.total_files && file.total_files > 1 ? (
                         `📁 ${file.total_files} files`
                       ) : (
-                        file.original_filename
+                        renderTextWithLinks(file.original_filename)
                       )}
                     </div>
                     <div className="file-meta">

@@ -212,9 +212,30 @@ export const useFileUpload = (): UseFileUploadResult => {
       return
     }
 
-    if (selectedFiles.length === 0) {
-      setStatus('Please select at least one file!')
-      return
+    let filesToUpload = [...selectedFiles]
+
+    if (filesToUpload.length === 0) {
+      const trimmedDesc = description.trim()
+      if (trimmedDesc.length > 0) {
+        const now = new Date()
+        const pad = (n: number) => String(n).padStart(2, '0')
+        const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
+        const firstLine = trimmedDesc.split('\n')[0].trim()
+        const slug = firstLine
+          .replace(/^https?:\/\//i, '')
+          .replace(/[^a-zA-Z0-9_-]/g, '_')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '')
+          .slice(0, 30)
+
+        const textFileName = slug.length >= 2 ? `${slug}_${timestamp}.txt` : `note_${timestamp}.txt`
+        const textBlob = new Blob([trimmedDesc], { type: 'text/plain;charset=utf-8' })
+        const textFile = new File([textBlob], textFileName, { type: 'text/plain' })
+        filesToUpload = [textFile]
+      } else {
+        setStatus('Please select at least one file or enter a description!')
+        return
+      }
     }
 
     setUploading(true)
@@ -222,7 +243,7 @@ export const useFileUpload = (): UseFileUploadResult => {
     setStatus('')
 
     const formData = new FormData()
-    selectedFiles.forEach(file => {
+    filesToUpload.forEach(file => {
       formData.append('files', file)
     })
     formData.append('description', description)
