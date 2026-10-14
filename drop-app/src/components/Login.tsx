@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../AuthContext";
+import { getAppUrl } from "../utils/fileUtils";
 import "../Login.css";
 
 export default function Login() {
@@ -7,7 +8,15 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const { login, register } = useAuth();
+  const { login, register, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectUrl = urlParams.get('redirect');
+      window.location.href = redirectUrl || getAppUrl('/');
+    }
+  }, [isAuthenticated]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,12 +33,13 @@ export default function Login() {
       } else {
         await login(username, password);
       }
-    } catch {
-      setLocalError(
+    } catch (err) {
+      const message = err instanceof Error ? err.message : (
         isRegistering
           ? "Registration failed. Username might already exist."
           : "Login failed. Check your credentials."
       );
+      setLocalError(message);
     }
   };
 

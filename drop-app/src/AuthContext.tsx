@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { setRefreshTokenFunction } from "./utils/fetchWithTokenRefresh";
+import { getAppUrl } from "./utils/fileUtils";
 
 interface AuthContextType {
   token: string | null;
@@ -137,7 +138,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
 
       if (!response.ok) {
-        throw new Error("Invalid credentials");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.detail || "Invalid credentials");
       }
 
       const userInfo = await fetchCurrentUser();
@@ -145,13 +147,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUsername(userInfo?.username || username);
       setIsAdmin(Boolean(userInfo?.is_admin));
 
-      // Check for redirect URL in query parameters
+      // Check for redirect URL in query parameters, otherwise go to home
       const urlParams = new URLSearchParams(window.location.search);
       const redirectUrl = urlParams.get('redirect');
-      if (redirectUrl) {
-        console.log("✅ Redirecting to:", redirectUrl);
-        window.location.href = redirectUrl;
-      }
+      window.location.href = redirectUrl || getAppUrl('/');
     } catch (err) {
       const message = err instanceof Error ? err.message : "Login failed";
       setError(message);

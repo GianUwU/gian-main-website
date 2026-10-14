@@ -6,6 +6,7 @@ import FileDetail from './components/FileDetail'
 import FileUpload from './components/FileUpload'
 import FileList from './components/FileList'
 import { useFileList } from './hooks/useFileList'
+import { getAppUrl } from './utils/fileUtils'
 
 function App() {
   const { isLoading, isAuthenticated } = useAuth()
@@ -31,8 +32,12 @@ function App() {
   const downloadMatch = routePath.match(/^\/view\/([\w\-]+)\/now\/?$/i)
   const viewMatch = routePath.match(/^\/view\/([\w\-]+)\/?$/i)
 
-  // Login route should always render the auth page.
+  // Login route: redirect to home if already authenticated, otherwise show Login page
   if (isLoginRoute) {
+    if (isAuthenticated) {
+      window.location.href = getAppUrl('/')
+      return null
+    }
     return <Login />
   }
 
