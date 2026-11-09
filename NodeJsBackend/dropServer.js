@@ -8,16 +8,21 @@ const jwt = require('jsonwebtoken')
 const multer = require('multer')
 const sqlite3 = require('sqlite3').verbose()
 const { initializeAllDatabases, authDbPath, dropDbPath } = require('./db')
+const { getAutheliaUser } = require('./authelia')
 
 const app = express()
 app.use(express.json())
 
-initializeAllDatabases().catch(err => {
+initializeAllDatabases().then(() => {
+    cleanupExpiredFiles().catch(err => {
+        console.error('Failed to cleanup expired files on startup:', err)
+    })
+}).catch(err => {
     console.error('Failed to initialize databases:', err)
     process.exit(1)
 })
 
-const UPLOAD_DIR = path.join(__dirname, 'uploads')
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads')
 fs.mkdirSync(UPLOAD_DIR, { recursive: true })
 
 const authDb = new sqlite3.Database(authDbPath)
@@ -116,43 +121,80 @@ function getTokenFromRequest(req) {
     return cookies[ACCESS_COOKIE_NAME] || null
 }
 
-function authenticateAccessToken(req, res, next) {
+async function authenticateAccessToken(req, res, next) {
     const token = getTokenFromRequest(req)
 
-    if (!token) {
-        return next(new ApiError(401, 'Not authenticated'))
+    if (token) {
+        try {
+            const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+            if (payload && Number.isInteger(payload.id) && typeof payload.username !== 'undefined') {
+                const user = await getAuthSql(
+                    'SELECT id, username, is_admin FROM users WHERE id = ?',
+                    [payload.id]
+                )
+                if (user) {
+                    req.user = {
+                        id: user.id,
+                        username: user.username,
+                        is_admin: Boolean(user.is_admin),
+                    }
+                    return next()
+                }
+            }
+        } catch {
+            // Token expired or invalid, fallback to checking Authelia session
+        }
     }
 
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (err, payload) => {
-        if (err) {
-            return next(new ApiError(403, 'Access token is invalid or expired.'))
-        }
-
-        if (!payload || !Number.isInteger(payload.id) || typeof payload.username !== 'string') {
-            return next(new ApiError(403, 'Access token payload is malformed.'))
-        }
-
-        try {
-            const user = await getAuthSql(
-                'SELECT id, username, is_admin FROM users WHERE id = ?',
-                [payload.id]
-            )
-
-            if (!user) {
-                return next(new ApiError(401, 'User not found'))
-            }
-
-            req.user = {
-                id: user.id,
-                username: user.username,
-                is_admin: Boolean(user.is_admin),
-            }
-
+    try {
+        const autheliaUser = await getAutheliaUser(req, authDb)
+        if (autheliaUser) {
+            req.user = autheliaUser
             return next()
-        } catch (dbErr) {
-            return next(dbErr)
         }
-    })
+    } catch (err) {
+        console.error('Authelia auth error in dropServer:', err)
+    }
+
+    return next(new ApiError(401, 'Not authenticated'))
+}
+
+async function optionalAuthenticateAccessToken(req, res, next) {
+    const token = getTokenFromRequest(req)
+    if (token) {
+        try {
+            const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+            if (payload && Number.isInteger(payload.id) && typeof payload.username !== 'undefined') {
+                const user = await getAuthSql(
+                    'SELECT id, username, is_admin FROM users WHERE id = ?',
+                    [payload.id]
+                )
+                if (user) {
+                    req.user = {
+                        id: user.id,
+                        username: user.username,
+                        is_admin: Boolean(user.is_admin),
+                    }
+                    return next()
+                }
+            }
+        } catch {
+            // Fall through
+        }
+    }
+
+    try {
+        const autheliaUser = await getAutheliaUser(req, authDb)
+        if (autheliaUser) {
+            req.user = autheliaUser
+            return next()
+        }
+    } catch {
+        // Fall through
+    }
+
+    req.user = null
+    return next()
 }
 
 function validateDescription(description) {
@@ -173,7 +215,8 @@ function validateFilename(filename) {
         throw new ApiError(400, 'Filename too long (max 255 characters)')
     }
 
-    return filename.replace(/[<>:"/\\|?*]/g, '_').trim().replace(/^[.\s]+|[.\s]+$/g, '')
+    const sanitized = filename.replace(/[<>:"/\\|?*]/g, '_').trim().replace(/^[.\s]+|[.\s]+$/g, '')
+    return sanitized.length > 0 ? sanitized : 'unnamed_file'
 }
 
 function parseExpirationDays(value) {
@@ -321,6 +364,7 @@ function mapFileRow(row) {
         expires_at: row.expires_at,
         batch_id: row.batch_id,
         file_path: row.file_path,
+        drop_link_token: row.drop_link_token || null,
     }
 }
 
@@ -361,6 +405,7 @@ async function withBatchSummaries(rows) {
 async function listGroupedFiles({ whereClause, params = [], offset = 0, limit = 15 }) {
     const safeLimit = Math.max(Number(limit) || 15, 1)
     const safeOffset = Math.max(Number(offset) || 0, 0)
+    const nowIso = new Date().toISOString()
 
     const rows = await allSql(
         `WITH grouped AS (
@@ -371,7 +416,7 @@ async function listGroupedFiles({ whereClause, params = [], offset = 0, limit = 
                 COUNT(*) AS total_files,
                 SUM(file_size) AS total_size
             FROM files
-            WHERE ${whereClause}
+            WHERE (${whereClause}) AND (expires_at IS NULL OR expires_at > ?)
             GROUP BY COALESCE(batch_id, id)
         ),
         paged AS (
@@ -384,7 +429,7 @@ async function listGroupedFiles({ whereClause, params = [], offset = 0, limit = 
         FROM paged p
         JOIN files f ON f.rowid = p.representative_rowid
         ORDER BY p.latest_uploaded_at DESC`,
-        [...params, safeLimit, safeOffset]
+        [...params, nowIso, safeLimit, safeOffset]
     )
 
     return rows.map(row => ({
@@ -394,8 +439,8 @@ async function listGroupedFiles({ whereClause, params = [], offset = 0, limit = 
     }))
 }
 
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 * 1024
-const MAX_STORAGE_BYTES = 50 * 1024 * 1024 * 1024
+const MAX_STORAGE_GB = parseInt(process.env.MAX_STORAGE_GB || '300', 10)
+const MAX_STORAGE_BYTES = MAX_STORAGE_GB * 1024 * 1024 * 1024
 
 const storage = multer.diskStorage({
     destination: (_req, _file, cb) => {
@@ -410,14 +455,13 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage,
     limits: {
-        fileSize: MAX_FILE_SIZE_BYTES,
         files: 100,
     },
 })
 
 app.use('/uploads', express.static(UPLOAD_DIR))
 
-app.post('/upload', authenticateAccessToken, (req, res, next) => {
+app.post(['/upload', '/api/upload'], authenticateAccessToken, (req, res, next) => {
     upload.array('files')(req, res, async err => {
         if (err) {
             if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
@@ -474,7 +518,7 @@ app.post('/upload', authenticateAccessToken, (req, res, next) => {
             const incomingBytes = files.reduce((sum, file) => sum + (file.size || 0), 0)
             if (currentStorage + incomingBytes > MAX_STORAGE_BYTES) {
                 files.forEach(file => safeUnlink(file.path))
-                throw new ApiError(507, 'Server storage is full (50GB limit reached). Please contact administrator.')
+                throw new ApiError(507, `Server storage is full (${MAX_STORAGE_GB}GB limit reached). Please contact administrator.`)
             }
 
             const batchId = files.length > 1 ? randomId(12) : null
@@ -534,7 +578,7 @@ app.post('/upload', authenticateAccessToken, (req, res, next) => {
     })
 })
 
-app.get('/files', asyncHandler(async (req, res) => {
+app.get(['/files', '/api/files'], asyncHandler(async (req, res) => {
     const offset = Number(req.query.offset ?? 0)
     const limit = Number(req.query.limit ?? 15)
 
@@ -545,7 +589,7 @@ app.get('/files', asyncHandler(async (req, res) => {
     }))
 }))
 
-app.get('/files/my', authenticateAccessToken, asyncHandler(async (req, res) => {
+app.get(['/files/my', '/api/files/my'], authenticateAccessToken, asyncHandler(async (req, res) => {
     const offset = Number(req.query.offset ?? 0)
     const limit = Number(req.query.limit ?? 15)
 
@@ -557,7 +601,7 @@ app.get('/files/my', authenticateAccessToken, asyncHandler(async (req, res) => {
     }))
 }))
 
-app.get('/files/all', authenticateAccessToken, asyncHandler(async (req, res) => {
+app.get(['/files/all', '/api/files/all'], authenticateAccessToken, asyncHandler(async (req, res) => {
     if (!req.user.is_admin) {
         throw new ApiError(403, 'Admin access required')
     }
@@ -572,10 +616,20 @@ app.get('/files/all', authenticateAccessToken, asyncHandler(async (req, res) => 
     }))
 }))
 
-app.get('/files/:fileId', asyncHandler(async (req, res) => {
+app.get(['/files/:fileId', '/api/files/:fileId'], optionalAuthenticateAccessToken, asyncHandler(async (req, res) => {
     const fileRow = await getSql('SELECT * FROM files WHERE id = ?', [req.params.fileId])
     if (!fileRow) {
         throw new ApiError(404, 'File not found')
+    }
+
+    if (fileRow.expires_at && fileRow.expires_at <= new Date().toISOString()) {
+        throw new ApiError(404, 'File has expired')
+    }
+
+    if (fileRow.is_private) {
+        if (!req.user || req.user.id !== fileRow.user_id) {
+            throw new ApiError(403, 'Access denied to private file')
+        }
     }
 
     if (fileRow.batch_id) {
@@ -597,14 +651,24 @@ app.get('/files/:fileId', asyncHandler(async (req, res) => {
     })
 }))
 
-app.get('/files/:fileId/now', asyncHandler(async (req, res) => {
+app.get(['/files/:fileId/now', '/api/files/:fileId/now'], optionalAuthenticateAccessToken, asyncHandler(async (req, res) => {
     const fileRow = await getSql(
-        'SELECT filename, original_filename FROM files WHERE id = ?',
+        'SELECT filename, original_filename, is_private, user_id, expires_at FROM files WHERE id = ?',
         [req.params.fileId]
     )
 
     if (!fileRow) {
         throw new ApiError(404, 'File not found')
+    }
+
+    if (fileRow.expires_at && fileRow.expires_at <= new Date().toISOString()) {
+        throw new ApiError(404, 'File has expired')
+    }
+
+    if (fileRow.is_private) {
+        if (!req.user || req.user.id !== fileRow.user_id) {
+            throw new ApiError(403, 'Access denied to private file')
+        }
     }
 
     const fullPath = path.join(UPLOAD_DIR, fileRow.filename)
@@ -615,14 +679,24 @@ app.get('/files/:fileId/now', asyncHandler(async (req, res) => {
     res.download(fullPath, fileRow.original_filename)
 }))
 
-app.get('/files/:fileId/raw', asyncHandler(async (req, res) => {
+app.get(['/files/:fileId/raw', '/api/files/:fileId/raw'], optionalAuthenticateAccessToken, asyncHandler(async (req, res) => {
     const fileRow = await getSql(
-        'SELECT filename, original_filename, file_type FROM files WHERE id = ?',
+        'SELECT filename, original_filename, file_type, is_private, user_id, expires_at FROM files WHERE id = ?',
         [req.params.fileId]
     )
 
     if (!fileRow) {
         throw new ApiError(404, 'File not found')
+    }
+
+    if (fileRow.expires_at && fileRow.expires_at <= new Date().toISOString()) {
+        throw new ApiError(404, 'File has expired')
+    }
+
+    if (fileRow.is_private) {
+        if (!req.user || req.user.id !== fileRow.user_id) {
+            throw new ApiError(403, 'Access denied to private file')
+        }
     }
 
     const fullPath = path.join(UPLOAD_DIR, fileRow.filename)
@@ -632,11 +706,13 @@ app.get('/files/:fileId/raw', asyncHandler(async (req, res) => {
 
     const mime = inferMimeType(fileRow.original_filename, fileRow.file_type)
     res.setHeader('Content-Type', mime)
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileRow.original_filename)}"`)
+    const encoded = encodeURIComponent(fileRow.original_filename)
+    const asciiSafe = fileRow.original_filename.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '\\"')
+    res.setHeader('Content-Disposition', `inline; filename="${asciiSafe}"; filename*=UTF-8''${encoded}`)
     res.sendFile(fullPath, { acceptRanges: true })
 }))
 
-app.delete('/files/:fileId', authenticateAccessToken, asyncHandler(async (req, res) => {
+app.delete(['/files/:fileId', '/api/files/:fileId'], authenticateAccessToken, asyncHandler(async (req, res) => {
     const fileRow = await getSql(
         'SELECT id, filename, user_id, batch_id FROM files WHERE id = ?',
         [req.params.fileId]
@@ -673,10 +749,167 @@ app.delete('/files/:fileId', authenticateAccessToken, asyncHandler(async (req, r
     })
 }))
 
-app.get('/storage-info', asyncHandler(async (_req, res) => {
+// --- Personal Drop Link Endpoints ---
+
+const getMyDropLinkHandler = asyncHandler(async (req, res) => {
+    let row = await getSql('SELECT token FROM user_drop_links WHERE user_id = ?', [req.user.id])
+    if (!row) {
+        const token = randomId(12)
+        await runSql(
+            'INSERT INTO user_drop_links (user_id, username, token) VALUES (?, ?, ?)',
+            [req.user.id, req.user.username, token]
+        )
+        row = { token }
+    }
+
+    res.json({
+        token: row.token,
+        url: `/drop/${row.token}`
+    })
+})
+app.get('/api/drop-link/mine', authenticateAccessToken, getMyDropLinkHandler)
+app.get('/drop-link/mine', authenticateAccessToken, getMyDropLinkHandler)
+
+const regenerateMyDropLinkHandler = asyncHandler(async (req, res) => {
+    const newToken = randomId(12)
+    const existing = await getSql('SELECT id FROM user_drop_links WHERE user_id = ?', [req.user.id])
+    if (existing) {
+        await runSql('UPDATE user_drop_links SET token = ? WHERE user_id = ?', [newToken, req.user.id])
+    } else {
+        await runSql(
+            'INSERT INTO user_drop_links (user_id, username, token) VALUES (?, ?, ?)',
+            [req.user.id, req.user.username, newToken]
+        )
+    }
+
+    res.json({
+        token: newToken,
+        url: `/drop/${newToken}`
+    })
+})
+app.post('/api/drop-link/mine/regenerate', authenticateAccessToken, regenerateMyDropLinkHandler)
+app.post('/drop-link/mine/regenerate', authenticateAccessToken, regenerateMyDropLinkHandler)
+
+const getDropLinkInfoHandler = asyncHandler(async (req, res) => {
+    const link = await getSql('SELECT id, user_id FROM user_drop_links WHERE token = ?', [req.params.token])
+    if (!link) {
+        throw new ApiError(404, 'Personal Drop Link not found')
+    }
+
+    const files = await allSql(
+        `SELECT id, filename, original_filename, file_size, file_type, uploaded_at
+         FROM files
+         WHERE drop_link_token = ?
+         ORDER BY uploaded_at DESC`,
+        [req.params.token]
+    )
+
+    res.json({
+        valid: true,
+        files: files.map(f => ({
+            id: f.id,
+            filename: f.filename,
+            original_filename: f.original_filename,
+            file_size: f.file_size,
+            file_type: f.file_type,
+            uploaded_at: f.uploaded_at
+        }))
+    })
+})
+app.get('/api/drop-link/:token', getDropLinkInfoHandler)
+app.get('/drop-link/:token', getDropLinkInfoHandler)
+
+const uploadDropLinkHandler = (req, res, next) => {
+    upload.array('files')(req, res, async err => {
+        if (err) {
+            if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+                return next(new ApiError(413, 'File too large. Maximum file size is 5GB.'))
+            }
+            return next(err)
+        }
+
+        try {
+            const token = req.params.token
+            const linkOwner = await getSql('SELECT user_id, username FROM user_drop_links WHERE token = ?', [token])
+            if (!linkOwner) {
+                const filesToClean = Array.isArray(req.files) ? [...req.files] : []
+                filesToClean.forEach(file => safeUnlink(file.path))
+                throw new ApiError(404, 'Personal Drop Link not found or inactive')
+            }
+
+            const files = Array.isArray(req.files) ? [...req.files] : []
+            if (files.length === 0) {
+                throw new ApiError(400, 'Please select at least one file to drop')
+            }
+
+            const currentStorage = computeUploadsSizeBytes()
+            const incomingBytes = files.reduce((sum, file) => sum + (file.size || 0), 0)
+            if (currentStorage + incomingBytes > MAX_STORAGE_BYTES) {
+                files.forEach(file => safeUnlink(file.path))
+                throw new ApiError(507, `Server storage is full (${MAX_STORAGE_GB}GB limit reached). Please contact administrator.`)
+            }
+
+            const authUser = await getAuthSql('SELECT username FROM users WHERE id = ?', [linkOwner.user_id])
+            const targetUsername = authUser ? authUser.username : linkOwner.username
+            const uploadedAt = new Date().toISOString()
+            const inserted = []
+
+            for (const file of files) {
+                const originalFilename = validateFilename(file.originalname)
+                const detectedMime = inferMimeType(originalFilename, file.mimetype)
+                const id = await generateUniqueFileId()
+
+                await runSql(
+                    `INSERT INTO files (
+                        id, filename, original_filename, description, username, user_id, uploaded_at,
+                        file_size, file_type, is_private, expires_at, batch_id, file_path, drop_link_token
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        id,
+                        file.filename,
+                        originalFilename,
+                        '',
+                        targetUsername,
+                        linkOwner.user_id,
+                        uploadedAt,
+                        file.size,
+                        detectedMime,
+                        1,
+                        null,
+                        null,
+                        originalFilename,
+                        token
+                    ]
+                )
+
+                inserted.push({
+                    id,
+                    filename: file.filename,
+                    original_filename: originalFilename,
+                    file_size: file.size,
+                    file_type: detectedMime,
+                    uploaded_at: uploadedAt
+                })
+            }
+
+            res.json({
+                status: 'ok',
+                files: inserted
+            })
+        } catch (uploadErr) {
+            const filesToClean = Array.isArray(req.files) ? [...req.files] : []
+            filesToClean.forEach(file => safeUnlink(file.path))
+            next(uploadErr)
+        }
+    })
+}
+app.post('/api/drop-link/:token/upload', uploadDropLinkHandler)
+app.post('/drop-link/:token/upload', uploadDropLinkHandler)
+
+app.get(['/storage-info', '/api/storage-info'], asyncHandler(async (_req, res) => {
     const usedBytes = computeUploadsSizeBytes()
     const usedGb = usedBytes / (1024 ** 3)
-    const maxGb = 50
+    const maxGb = MAX_STORAGE_GB
 
     res.json({
         used_gb: Number(usedGb.toFixed(2)),
@@ -727,7 +960,14 @@ app.use((err, req, res, next) => {
     res.status(status).json({ detail: message })
 })
 
-const server = app.listen(3002)
+const server = app.listen(3002, () => {
+    console.log('Drop server running on port 3002')
+})
+
+// High-speed socket & streaming configuration for multi-gigabyte / 2.5Gbps transfers
+server.requestTimeout = 0 // Never drop active data streams midway
+server.headersTimeout = 65000
+server.keepAliveTimeout = 65000
 
 process.on('SIGTERM', () => {
     authDb.close()

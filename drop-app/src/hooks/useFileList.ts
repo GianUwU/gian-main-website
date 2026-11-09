@@ -90,6 +90,9 @@ export const useFileList = () => {
   }, [fetchFilesForView])
 
   const addFile = useCallback((file: FileInfo) => {
+    if (currentViewRef.current === 'public' && file.is_private) {
+      return
+    }
     setFiles(prev => [file, ...prev])
     displayedFilesRef.current.add(file.id)
   }, [])

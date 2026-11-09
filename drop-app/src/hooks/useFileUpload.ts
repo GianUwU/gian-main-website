@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useAuth } from '../AuthContext'
-import { getAppUrl } from '../utils/fileUtils'
+import { getAppUrl, formatFileSize } from '../utils/fileUtils'
 import type { FileInfo } from '../types'
 
 interface UseFileUploadResult {
@@ -11,6 +11,8 @@ interface UseFileUploadResult {
   status: string
   uploading: boolean
   uploadProgress: number
+  estimatedSecondsRemaining: number | null
+  uploadSpeedStr: string
   isDragging: boolean
   linkCopied: boolean
   setSelectedFiles: (files: File[]) => void
@@ -38,8 +40,6 @@ interface UploadResult {
   }
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024 // 5GB
-
 export const useFileUpload = (): UseFileUploadResult => {
   const { isAuthenticated, isAdmin, refreshToken } = useAuth()
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
@@ -49,17 +49,18 @@ export const useFileUpload = (): UseFileUploadResult => {
   const [status, setStatus] = useState<string>('')
   const [uploading, setUploading] = useState<boolean>(false)
   const [uploadProgress, setUploadProgress] = useState<number>(0)
+  const [estimatedSecondsRemaining, setEstimatedSecondsRemaining] = useState<number | null>(null)
+  const [uploadSpeedStr, setUploadSpeedStr] = useState<string>('')
   const [isDragging, setIsDragging] = useState<boolean>(false)
   const [linkCopied, setLinkCopied] = useState<boolean>(false)
 
-  const validateFiles = useCallback((files: File[]): { valid: boolean; error?: string } => {
-    const tooLarge = files.find(file => file.size > MAX_FILE_SIZE)
-    if (tooLarge) {
-      return {
-        valid: false,
-        error: `Error: File "${tooLarge.name}" is too large. Maximum file size is 5GB.`
-      }
+  useEffect(() => {
+    if (isAdmin) {
+      setExpirationDays(null)
     }
+  }, [isAdmin])
+
+  const validateFiles = useCallback((_files: File[]): { valid: boolean; error?: string } => {
     return { valid: true }
   }, [])
 
@@ -240,6 +241,8 @@ export const useFileUpload = (): UseFileUploadResult => {
 
     setUploading(true)
     setUploadProgress(0)
+    setEstimatedSecondsRemaining(null)
+    setUploadSpeedStr('')
     setStatus('')
 
     const formData = new FormData()
@@ -255,11 +258,23 @@ export const useFileUpload = (): UseFileUploadResult => {
     try {
       const uploadWithCookieSession = () => new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest()
+        const uploadStartTime = performance.now()
 
         xhr.upload.addEventListener('progress', (e) => {
           if (e.lengthComputable) {
-            const percentComplete = Math.round((e.loaded / e.total) * 100)
+            const percentComplete = Math.min(Math.round((e.loaded / e.total) * 100), 99)
             setUploadProgress(percentComplete)
+
+            const now = performance.now()
+            const elapsed = (now - uploadStartTime) / 1000
+            if (elapsed > 0.1 && e.loaded > 0) {
+              const speed = e.loaded / elapsed
+              const remainingBytes = e.total - e.loaded
+              if (speed > 0) {
+                setEstimatedSecondsRemaining(Math.max(0, Math.ceil(remainingBytes / speed)))
+                setUploadSpeedStr(`${formatFileSize(speed)}/s`)
+              }
+            }
           }
         })
 
@@ -305,7 +320,7 @@ export const useFileUpload = (): UseFileUploadResult => {
         setIsPrivate(false)
         setExpirationDays(isAdmin ? null : 7)
 
-        if (onSuccess && !result.file.is_private) {
+        if (onSuccess) {
           onSuccess(result.file)
         }
 
@@ -322,7 +337,11 @@ export const useFileUpload = (): UseFileUploadResult => {
       setUploadProgress(0)
     } finally {
       setUploading(false)
-      setTimeout(() => setUploadProgress(0), 1000)
+      setTimeout(() => {
+        setUploadProgress(0)
+        setEstimatedSecondsRemaining(null)
+        setUploadSpeedStr('')
+      }, 1000)
     }
   }, [isAuthenticated, isAdmin, refreshToken, selectedFiles, description, isPrivate, expirationDays])
 
@@ -339,6 +358,8 @@ export const useFileUpload = (): UseFileUploadResult => {
     status,
     uploading,
     uploadProgress,
+    estimatedSecondsRemaining,
+    uploadSpeedStr,
     isDragging,
     linkCopied,
     setSelectedFiles,

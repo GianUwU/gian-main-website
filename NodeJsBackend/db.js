@@ -136,9 +136,39 @@ async function initializeDropDatabase() {
             is_private INTEGER DEFAULT 0,
             expires_at TEXT,
             batch_id TEXT,
-            file_path TEXT
+            file_path TEXT,
+            drop_link_token TEXT
         )
     `)
+
+    await run(db, `
+        CREATE TABLE IF NOT EXISTS user_drop_links (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER UNIQUE NOT NULL,
+            username TEXT NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    `)
+
+    await new Promise((resolve) => {
+        db.all("PRAGMA table_info(files)", (err, columns) => {
+            if (err || !columns) {
+                resolve()
+                return
+            }
+            const hasDropToken = columns.some(col => col.name === 'drop_link_token')
+            if (!hasDropToken) {
+                db.run("ALTER TABLE files ADD COLUMN drop_link_token TEXT", () => resolve())
+            } else {
+                resolve()
+            }
+        })
+    })
+
+    await run(db, `CREATE INDEX IF NOT EXISTS idx_files_drop_link_token ON files(drop_link_token)`)
+    await run(db, `CREATE UNIQUE INDEX IF NOT EXISTS idx_user_drop_links_token ON user_drop_links(token)`)
+    await run(db, `CREATE UNIQUE INDEX IF NOT EXISTS idx_user_drop_links_user_id ON user_drop_links(user_id)`)
 
     await new Promise((resolve, reject) => {
         db.close(err => {

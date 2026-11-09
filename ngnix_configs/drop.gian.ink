@@ -23,8 +23,7 @@ server {
     
     root /var/www/drop.gian.ink/html;
     index index.html;
-    client_max_body_size 5G;  # Allow large file uploads
-    ssl_certificate /etc/letsencrypt/live/gian.ink/fullchain.pem; # managed by Certbot
+    client_max_body_size 0;  # Disable max body size limit (unlimited uploads)
     ssl_certificate_key /etc/letsencrypt/live/gian.ink/privkey.pem; # managed by Certbot
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
@@ -36,6 +35,12 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
     server_tokens off;
 
+    # Performance & TCP optimization for high-throughput connections
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+
     # Auth endpoints - proxy to Node auth backend
     location = /token {
         limit_req zone=drop_auth_limit burst=20 nodelay;
@@ -46,6 +51,10 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Remote-User $http_remote_user;
+        proxy_set_header Remote-Groups $http_remote_groups;
+        proxy_set_header Remote-Name $http_remote_name;
+        proxy_set_header Remote-Email $http_remote_email;
         proxy_set_header Connection "";
     }
 
@@ -58,12 +67,16 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Remote-User $http_remote_user;
+        proxy_set_header Remote-Groups $http_remote_groups;
+        proxy_set_header Remote-Name $http_remote_name;
+        proxy_set_header Remote-Email $http_remote_email;
         proxy_set_header Connection "";
     }
 
-    # Drop API endpoints
+    # Drop API endpoints - Standard Upload (Zero-Buffering for High-Speed 2.5Gbps+ Streaming)
     location = /upload {
-        limit_req zone=drop_upload_limit burst=10 nodelay;
+        limit_req zone=drop_upload_limit burst=30 nodelay;
 
         proxy_pass http://127.0.0.1:3002/upload;
         proxy_http_version 1.1;
@@ -72,6 +85,33 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header Connection "";
+
+        # Direct socket streaming (bypass disk temp buffers)
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        client_body_buffer_size 1m;
+    }
+
+    # Personal Drop Link Uploads (Zero-Buffering)
+    location ~* ^/(?:api/)?drop-link/[^/]+/upload$ {
+        limit_req zone=drop_upload_limit burst=30 nodelay;
+
+        proxy_pass http://127.0.0.1:3002;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection "";
+
+        # Direct socket streaming
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        client_body_buffer_size 1m;
     }
 
     location = /files {
@@ -96,6 +136,10 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header Connection "";
+
+        proxy_buffering off;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
     }
 
     location = /storage-info {
@@ -121,6 +165,11 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header Connection "";
+
+        # Direct streaming for fast downloads
+        proxy_buffering off;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
     }
 
     # Optional /api passthrough to drop backend
@@ -134,11 +183,12 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header Connection "";
+
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
     }
 
     location / {
         try_files $uri $uri/ /index.html;
     }
-
-
 }

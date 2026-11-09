@@ -11,6 +11,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
+  loginWithAuthelia: (redirectUrl?: string) => void;
   logout: () => void;
   error: string | null;
   refreshToken: () => Promise<void>;
@@ -183,6 +184,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const loginWithAuthelia = (redirectUrl?: string) => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirect = redirectUrl || urlParams.get('redirect') || getAppUrl('/');
+    window.location.href = `/users/authelia/login?redirect=${encodeURIComponent(redirect)}`;
+  };
+
   const logout = async () => {
     // Try to revoke refresh token on server
     try {
@@ -213,6 +220,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isLoading,
         login,
         register,
+        loginWithAuthelia,
         logout,
         error,
         refreshToken,

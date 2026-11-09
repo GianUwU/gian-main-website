@@ -4,7 +4,8 @@ const express = require('express')
 const app = express()
 const jwt = require('jsonwebtoken')
 const sqlite3 = require('sqlite3').verbose()
-const { initializeAllDatabases, financeDbPath } = require('./db')
+const { initializeAllDatabases, financeDbPath, authDbPath } = require('./db')
+const { getAutheliaUser } = require('./authelia')
 
 app.use(express.json())
 
@@ -14,6 +15,7 @@ initializeAllDatabases().catch(err => {
 })
 
 const db = new sqlite3.Database(financeDbPath)
+const authDb = new sqlite3.Database(authDbPath)
 
 const ACCESS_COOKIE_NAME = 'accessToken'
 
@@ -231,22 +233,35 @@ app.delete('/transactions/:id', authenticateToken, asyncHandler(async (req, res)
 }))
 
 // Authentication Middleware
-function authenticateToken(req, res, next){
+async function authenticateToken(req, res, next) {
     const token = getTokenFromRequest(req)
-    if (token == null) return next(new ApiError(401, 'Missing access token.'))
+    if (token) {
+        try {
+            const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+            if (payload && Number.isInteger(payload.id) && typeof payload.username !== 'undefined') {
+                req.user = {
+                    id: payload.id,
+                    username: payload.username,
+                    is_admin: Boolean(payload.is_admin),
+                }
+                return next()
+            }
+        } catch {
+            // Token expired or invalid
+        }
+    }
 
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, payload) => {
-        if (err) return next(new ApiError(403, 'Access token is invalid or expired.'))
-        if (!payload || !Number.isInteger(payload.id) || typeof payload.username !== 'string') {
-            return next(new ApiError(403, 'Access token payload is malformed.'))
+    try {
+        const autheliaUser = await getAutheliaUser(req, authDb)
+        if (autheliaUser) {
+            req.user = autheliaUser
+            return next()
         }
-        req.user = {
-            id: payload.id,
-            username: payload.username,
-            is_admin: Boolean(payload.is_admin),
-        }
-        return next()
-    })
+    } catch (err) {
+        console.error('Authelia auth error in financeServer:', err)
+    }
+
+    return next(new ApiError(401, 'Missing or expired access token.'))
 }
 
 app.use((req, res, next) => {

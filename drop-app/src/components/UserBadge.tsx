@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useAuth } from "../AuthContext";
+import PersonalDropLinkBanner from "./PersonalDropLinkBanner";
 
 export default function UserBadge() {
   const { username, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState<boolean>(false);
   const [showPasswordModal, setShowPasswordModal] = useState<boolean>(false);
+  const [showDropLinkModal, setShowDropLinkModal] = useState<boolean>(false);
   const [currentPassword, setCurrentPassword] = useState<string>("");
   const [newPassword, setNewPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
@@ -95,6 +97,15 @@ export default function UserBadge() {
             >
               Change Password
             </button>
+            <button 
+              className="user-dropdown-item" 
+              onClick={() => {
+                setShowDropLinkModal(true);
+                setShowUserMenu(false);
+              }}
+            >
+              📥 Personal Drop Link
+            </button>
             <a
               href={window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:5173' : 'https://gian.ink'}
               className="user-dropdown-item"
@@ -118,6 +129,23 @@ export default function UserBadge() {
           </div>
         )}
       </div>
+
+      {showDropLinkModal && (
+        <div className="modal-overlay" onClick={() => setShowDropLinkModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '640px', width: '90%' }}>
+            <PersonalDropLinkBanner />
+            <div style={{ marginTop: '20px', textAlign: 'right' }}>
+              <button 
+                type="button" 
+                className="button button-cancel" 
+                onClick={() => setShowDropLinkModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showPasswordModal && (
         <div className="modal-overlay" onClick={() => setShowPasswordModal(false)}>

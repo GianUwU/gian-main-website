@@ -7,6 +7,7 @@ import { useAuth } from '../AuthContext'
 import { fetchWithTokenRefresh } from '../utils/fetchWithTokenRefresh'
 import { formatFileSize, formatExpiresIn, getAppUrl, getUploadUrl, isImage } from '../utils/fileUtils'
 import { renderTextWithLinks } from '../utils/linkify'
+import PersonalDropLinkBanner from './PersonalDropLinkBanner'
 import type { FileInfo } from '../types'
 
 interface FileListProps {
@@ -93,6 +94,10 @@ export default function FileList({
           )}
         </div>
 
+        {showMyFiles && isAuthenticated && (
+          <PersonalDropLinkBanner />
+        )}
+
         <div className="file-list">
           {files.length === 0 && !loading ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>No files uploaded yet.</div>
@@ -150,6 +155,16 @@ export default function FileList({
                     <div className="file-meta">
                       <span className="file-user">👤 {file.username}</span>
                       <span className="file-size">{formatFileSize(file.total_size || file.file_size)}</span>
+                      {file.drop_link_token && (
+                        <span className="file-drop-badge" title="Received via your Personal Drop Link">
+                          📥 Dropped
+                        </span>
+                      )}
+                      {file.is_private && (
+                        <span className="file-private-badge" title="Private file">
+                          🔒 Private
+                        </span>
+                      )}
                     </div>
                     {file.expires_at && (
                       <div className="file-expires">

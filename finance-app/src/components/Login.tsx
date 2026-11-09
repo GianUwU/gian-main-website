@@ -1,98 +1,42 @@
-import React, { useState } from "react";
+import { useEffect } from "react";
 import { useAuth } from "../AuthContext";
 import "../Login.css";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
-  const { login, register } = useAuth();
+  const { loginWithAuthelia, isAuthenticated } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLocalError(null);
-
-    if (!username || !password) {
-      setLocalError("Please enter both username and password");
-      return;
+  useEffect(() => {
+    if (isAuthenticated) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectUrl = urlParams.get('redirect');
+      window.location.href = redirectUrl || '/';
     }
+  }, [isAuthenticated]);
 
-    try {
-      if (isRegistering) {
-        await register(username, password);
-      } else {
-        await login(username, password);
-      }
-    } catch {
-      setLocalError(
-        isRegistering
-          ? "Registration failed. Username might already exist."
-          : "Login failed. Check your credentials."
-      );
-    }
+  const handleSignIn = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectUrl = urlParams.get('redirect') || '/';
+    loginWithAuthelia(redirectUrl);
   };
 
   return (
-    <>
-      <div className="login-page">
-        <div className="login-container">
-          <div className="login-card">
-            <h1>Gian Finance</h1>
-            <p className="login-subtitle">
-              {isRegistering ? "Create an account" : "Sign in to your account"}
-            </p>
+    <div className="login-page">
+      <div className="login-container">
+        <div className="login-card">
+          <h1>Gian Finance</h1>
+          <p className="login-subtitle">
+            Sign in to your account
+          </p>
 
-            <form onSubmit={handleSubmit} className="login-form">
-              <div className="form-group">
-                <label htmlFor="username">Username</label>
-                <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
-                  className="login-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="login-input"
-                />
-              </div>
-
-              {localError && <div className="login-error">{localError}</div>}
-
-              <button type="submit" className="login-button">
-                {isRegistering ? "Create Account" : "Sign In"}
-              </button>
-            </form>
-
-            <p className="login-toggle">
-              {isRegistering ? "Already have an account? " : "Don't have an account? "}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsRegistering(!isRegistering);
-                  setLocalError(null);
-                  setUsername("");
-                  setPassword("");
-                }}
-                className="toggle-button"
-              >
-                {isRegistering ? "Sign In" : "Create Account"}
-              </button>
-            </p>
-          </div>
+          <button
+            type="button"
+            className="login-button"
+            onClick={handleSignIn}
+          >
+            Sign In
+          </button>
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -18,6 +18,31 @@ export interface FileInfo {
   file_path?: string | null
   total_files: number | null
   total_size: number | null
+  drop_link_token?: string | null
+}
+
+export interface DroppedFile {
+  id: string
+  filename: string
+  original_filename: string
+  file_size: number
+  file_type: string
+  uploaded_at: string
+}
+
+export interface ActiveUploadItem {
+  id: string
+  file: File
+  original_filename: string
+  file_size: number
+  file_type: string
+  progress: number
+  status: 'uploading' | 'completed' | 'error'
+  errorMessage?: string
+  uploadedBytes: number
+  speedBytesPerSec: number
+  estimatedSecondsRemaining: number | null
+  savedFile?: DroppedFile
 }
 
 export interface BatchInfo {
@@ -34,3 +59,4 @@ export interface StorageInfo {
 }
 
 export type ViewMode = 'public' | 'my' | 'all'
+

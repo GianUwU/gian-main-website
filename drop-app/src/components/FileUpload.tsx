@@ -5,7 +5,7 @@
 import { useAuth } from '../AuthContext'
 import { useStorageInfo } from '../hooks/useStorageInfo'
 import { useFileUpload } from '../hooks/useFileUpload'
-import { formatFileSize, getAppUrl } from '../utils/fileUtils'
+import { formatFileSize } from '../utils/fileUtils'
 import type { FileInfo } from '../types'
 
 interface FileUploadProps {
@@ -13,8 +13,8 @@ interface FileUploadProps {
 }
 
 export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
-  const { isAuthenticated, isAdmin } = useAuth()
-  const { storageInfo } = useStorageInfo()
+  const { isAuthenticated, isAdmin, loginWithAuthelia } = useAuth()
+  const { storageInfo, reloadStorageInfo } = useStorageInfo()
   const {
     selectedFiles,
     description,
@@ -23,6 +23,8 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
     status,
     uploading,
     uploadProgress,
+    estimatedSecondsRemaining,
+    uploadSpeedStr,
     isDragging,
     linkCopied,
     setDescription,
@@ -39,16 +41,21 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
   } = useFileUpload()
 
   const currentPath = `${window.location.pathname}${window.location.search}`
-  const loginUrl = getAppUrl(`/login?redirect=${encodeURIComponent(currentPath)}`)
 
   if (!isAuthenticated) {
     return (
       <div className="upload-card upload-card-logged-out">
         <h2>Upload a File</h2>
         <p className="upload-signin-text">Sign in is required to upload new files.</p>
-        <a href={loginUrl} className="upload-signin-btn">
-          sign in to upload files
-        </a>
+        <div className="upload-auth-buttons">
+          <button
+            type="button"
+            className="upload-signin-btn"
+            onClick={() => loginWithAuthelia(currentPath)}
+          >
+            Sign In
+          </button>
+        </div>
       </div>
     )
   }
@@ -75,7 +82,10 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
         </div>
       )}
 
-      <form onSubmit={(e) => handleSubmit(e, onUploadSuccess)} className="upload-form">
+      <form onSubmit={(e) => handleSubmit(e, (file) => {
+        if (onUploadSuccess) onUploadSuccess(file)
+        reloadStorageInfo()
+      })} className="upload-form">
           <div 
             className={`file-drop-zone ${isDragging ? 'dragging' : ''} ${selectedFiles.length > 0 ? 'has-files' : ''}`}
             onDragEnter={handleDragEnter}
@@ -122,8 +132,8 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
               <div className="drop-zone-empty">
                 <div className="upload-icon-large">📁</div>
                 <div className="drop-zone-text">
-                  <strong>Drag & drop files here, click to browse, or paste</strong>
-                  <span>Screenshots, images, text, and multiple files supported</span>
+                  <strong>Tap to browse, drag & drop, or paste files</strong>
+                  <span>Photos, videos, screenshots, documents, and notes</span>
                 </div>
               </div>
             )}
@@ -208,7 +218,15 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
                   style={{ width: `${uploadProgress}%` }}
                 ></div>
               </div>
-              <div className="progress-text">Uploading... {uploadProgress}%</div>
+              <div className="progress-text">
+                Uploading... {uploadProgress}%
+                {estimatedSecondsRemaining !== null && (
+                  <span>
+                    {' • '}⏱️ {estimatedSecondsRemaining < 60 ? `~${estimatedSecondsRemaining}s left` : `~${Math.floor(estimatedSecondsRemaining / 60)}m ${estimatedSecondsRemaining % 60}s left`}
+                    {uploadSpeedStr ? ` • ${uploadSpeedStr}` : ''}
+                  </span>
+                )}
+              </div>
             </div>
           )}
           

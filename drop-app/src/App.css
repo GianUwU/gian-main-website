@@ -1,11 +1,17 @@
 .container {
-  margin: auto;
-  padding: 10px;
+  margin: 0 auto;
+  padding: 16px 12px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 20px;
   background-color: #F0F2EF;
+  min-height: 100dvh;
   min-height: 100vh;
+  max-width: 1200px;
+  width: 100%;
+  box-sizing: border-box;
   overflow-x: hidden;
 }
 
@@ -57,25 +63,101 @@
 }
 
 .upload-signin-text {
-  margin: 0 0 14px 0;
+  margin: 0 0 16px 0;
   color: #666;
 }
 
-.upload-signin-btn {
-  display: inline-block;
+.upload-auth-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.upload-authelia-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 18px;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #fff;
+  border: 1px solid #334155;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.upload-authelia-btn:hover {
+  background: #0f172a;
+  transform: translateY(-1px);
+}
+
+.authelia-icon-upload {
+  width: 18px;
+  height: 18px;
+  color: #38bdf8;
+}
+
+.upload-signin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 24px;
   border-radius: 8px;
   background: #667eea;
   color: #fff;
-  text-decoration: none;
+  border: none;
   font-weight: 600;
-  text-transform: lowercase;
+  font-size: 14px;
+  cursor: pointer;
   transition: background 0.2s, transform 0.2s;
 }
 
 .upload-signin-btn:hover {
   background: #5568d3;
   transform: translateY(-1px);
+}
+
+.header-auth-actions {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 16px;
+  border-radius: 6px;
+  background: #667eea;
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.header-login-btn:hover {
+  background: #5568d3;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .header-auth-actions {
+    position: static;
+    transform: none;
+    margin-top: 8px;
+    justify-content: center;
+  }
 }
 
 .storage-info {
@@ -310,14 +392,14 @@
   padding: 10px 12px;
   border-radius: 8px;
   border: none;
-  font-size: 14px;
+  font-size: 16px; /* 16px prevents iOS Safari auto-zoom */
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
   font-family: inherit;
   resize: vertical;
   transition: background 0.2s;
-  min-height: 45px;
+  min-height: 50px;
   line-height: 1.4;
   background: #f5f5f5;
 }
@@ -896,6 +978,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   font-size: 12px;
   color: #999;
   margin-bottom: 8px;
@@ -965,55 +1049,6 @@
   box-shadow: 0 2px 8px rgba(176, 0, 32, 0.3);
 }
 
-@media (max-width: 768px) {
-  .header {
-    padding: 15px 10px;
-  }
-
-  .header h1 {
-    font-size: 24px;
-  }
-  
-  .user-badge-container {
-    right: 10px;
-    top: 10px;
-  }
-  
-  .upload-card {
-    padding: 15px;
-    max-width: 90%;
-  }
-  
-  .file-list {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-  
-  .gallery-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .view-controls {
-    width: 100%;
-    justify-content: space-between;
-    flex-wrap: wrap;
-  }
-  
-  .view-btn {
-    flex: 1 1 calc(50% - 5px);
-    min-width: 120px;
-    padding: 12px 15px;
-    font-size: 13px;
-  }
-  
-  .user-dropdown {
-    right: 0;
-    left: auto;
-    min-width: 160px;
-  }
-}
-
 /* Multiple Files Upload Styles */
 .selected-files-display {
   width: 100%;
@@ -1021,10 +1056,6 @@
   flex-direction: column;
   gap: 10px;
 }
-
-/* Old files-header styles - removed */
-
-/* Old browse button - removed */
 
 .files-count {
   font-size: 15px;
@@ -1121,3 +1152,662 @@
   font-size: 40px;
   padding: 20px;
 }
+
+/* Personal Drop Link Banner Styles */
+.personal-drop-banner {
+  background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin: 0 0 24px 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.personal-drop-banner-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.personal-drop-banner-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.personal-drop-banner-title .banner-icon {
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.personal-drop-banner-title h3 {
+  margin: 0 0 4px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.personal-drop-banner-title p {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.banner-badge {
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.banner-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.drop-link-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.drop-link-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.drop-link-input {
+  flex: 1;
+  min-width: 240px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-family: monospace;
+  color: #0f172a;
+  outline: none;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+.drop-link-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.drop-copy-btn,
+.drop-open-btn,
+.drop-regenerate-btn {
+  padding: 9px 15px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  border: none;
+  box-sizing: border-box;
+}
+
+.drop-copy-btn {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.drop-copy-btn:hover {
+  background: #1d4ed8;
+}
+
+.drop-copy-btn.copied {
+  background: #16a34a;
+}
+
+.drop-open-btn {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.drop-open-btn:hover {
+  background: #e2e8f0;
+}
+
+.drop-regenerate-btn {
+  background: #ffffff;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+
+.drop-regenerate-btn:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+.banner-hint {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.banner-loading,
+.banner-error {
+  padding: 12px 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.banner-error {
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.banner-retry-btn {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* File badges */
+.file-drop-badge {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.file-private-badge {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+/* ==========================================================================
+   Responsive Styles (Placed at end of file so all overrides take precedence)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .container {
+    padding: 12px 10px;
+    gap: 16px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 14px 44px 14px 14px;
+    margin-bottom: 8px;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .header h1 {
+    font-size: clamp(19px, 5vw, 24px);
+    line-height: 1.25;
+    margin: 0 0 4px 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .header p {
+    font-size: 13.5px;
+    margin: 0;
+  }
+  
+  .user-badge-container {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .user-dropdown {
+    right: 0;
+    left: auto;
+    top: 100%;
+    margin-top: 8px;
+    min-width: 180px;
+    max-width: min(280px, calc(100vw - 20px));
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  }
+  
+  .upload-card {
+    padding: 16px 12px;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 12px;
+  }
+
+  .upload-card h2 {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  .file-drop-zone {
+    min-height: 120px;
+    padding: 12px 8px;
+    border-radius: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .drop-zone-empty {
+    min-height: 100px;
+    padding: 12px 6px;
+    gap: 8px;
+    box-sizing: border-box;
+  }
+
+  .upload-icon-large {
+    font-size: 32px;
+  }
+
+  .drop-zone-text strong {
+    font-size: 13.5px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .drop-zone-text span {
+    font-size: 11.5px;
+    overflow-wrap: anywhere;
+  }
+
+  .expiration-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .expiration-btn {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 60px;
+    min-height: 40px;
+    padding: 6px 4px;
+    font-size: 12.5px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .upload-form button[type="submit"] {
+    width: 100%;
+    min-height: 46px;
+    font-size: 15px;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+  
+  .homeboy-img {
+    max-width: min(220px, 70vw);
+    max-height: 130px;
+    object-fit: contain;
+    height: auto;
+    margin: 10px auto;
+  }
+
+  .gallery-section {
+    margin-top: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .gallery-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .gallery-header h2 {
+    font-size: 19px;
+    margin-bottom: 0;
+    text-align: center;
+  }
+  
+  .view-controls {
+    width: 100%;
+    display: flex;
+    gap: 4px;
+    box-sizing: border-box;
+  }
+  
+  .view-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 3px;
+    font-size: 12px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    border-radius: 8px;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
+
+  .file-list {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    padding-bottom: 24px;
+  }
+
+  .file-card {
+    border-radius: 12px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .file-preview {
+    height: 165px;
+    width: 100%;
+  }
+
+  .file-info {
+    padding: 12px 10px;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .file-name {
+    font-size: 14.5px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .file-original-name {
+    font-size: 11.5px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .file-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    align-items: center;
+    font-size: 11.5px;
+    min-width: 0;
+  }
+
+  .file-user {
+    overflow-wrap: anywhere;
+  }
+
+  .file-actions {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .btn-download, .btn-delete {
+    min-height: 42px;
+    font-size: 13px;
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .personal-drop-banner {
+    padding: 12px 10px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .personal-drop-banner-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .banner-badge {
+    align-self: flex-start;
+  }
+
+  .personal-drop-banner-title h3 {
+    font-size: 15.5px;
+  }
+
+  .personal-drop-banner-title p {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .drop-link-input-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+    box-sizing: border-box;
+  }
+
+  .drop-link-input {
+    width: 100%;
+    min-width: 0;
+    font-size: 12.5px;
+    padding: 9px 10px;
+    box-sizing: border-box;
+  }
+
+  .drop-link-actions {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .drop-copy-btn {
+    flex: 2;
+    min-height: 40px;
+    font-size: 12.5px;
+    justify-content: center;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .drop-open-btn,
+  .drop-regenerate-btn {
+    flex: 1;
+    min-height: 40px;
+    font-size: 12px;
+    justify-content: center;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .modal {
+    width: calc(100% - 20px);
+    max-width: 400px;
+    padding: 18px 12px;
+    margin: 10px;
+    box-sizing: border-box;
+    border-radius: 12px;
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+
+  .modal p {
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+
+  .password-modal {
+    width: calc(100% - 20px);
+    max-width: 400px;
+    padding: 18px 12px;
+  }
+
+  .password-modal h3 {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  .password-modal .input {
+    font-size: 16px;
+    padding: 11px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .modal-buttons {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .modal-buttons .button,
+  .modal-buttons .button-confirm,
+  .modal-buttons .button-cancel {
+    flex: 1;
+    min-height: 42px;
+    font-size: 13.5px;
+    justify-content: center;
+  }
+}
+
+/* Thin screens (360px and smaller, e.g. iPhone SE, Galaxy Z Flip/Fold cover screens) */
+@media (max-width: 420px) {
+  .container {
+    padding: 10px 6px;
+    gap: 12px;
+  }
+
+  .header {
+    padding: 12px 38px 12px 8px;
+  }
+
+  .header h1 {
+    font-size: 19px;
+  }
+
+  .header p {
+    font-size: 12px;
+  }
+
+  .upload-card {
+    padding: 12px 8px;
+  }
+
+  .upload-card h2 {
+    font-size: 16px;
+  }
+
+  .file-drop-zone {
+    min-height: 100px;
+    padding: 10px 6px;
+  }
+
+  .drop-zone-empty {
+    min-height: 90px;
+    padding: 8px 4px;
+    gap: 6px;
+  }
+
+  .upload-icon-large {
+    font-size: 28px;
+  }
+
+  .drop-zone-text strong {
+    font-size: 12.5px;
+  }
+
+  .drop-zone-text span {
+    font-size: 11px;
+  }
+
+  .expiration-btn {
+    min-width: 52px;
+    font-size: 11.5px;
+    padding: 6px 2px;
+    min-height: 36px;
+  }
+
+  .gallery-header h2 {
+    font-size: 17px;
+  }
+
+  .view-btn {
+    font-size: 11px;
+    padding: 7px 2px;
+    min-height: 36px;
+  }
+
+  .file-preview {
+    height: 145px;
+  }
+
+  .file-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .btn-download, .btn-delete {
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .drop-link-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .drop-copy-btn,
+  .drop-open-btn,
+  .drop-regenerate-btn {
+    width: 100%;
+    min-height: 38px;
+  }
+}
+

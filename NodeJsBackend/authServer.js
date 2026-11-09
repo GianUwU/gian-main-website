@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const sqlite3 = require('sqlite3').verbose()
 const { initializeAllDatabases, authDbPath } = require('./db')
+const { getAutheliaUser } = require('./authelia')
 
 app.use(express.json())
 
@@ -230,72 +231,153 @@ function getRefreshTokenFromRequest(req) {
     return refreshToken.trim()
 }
 
-function authenticateAccessToken(req, res, next) {
+async function authenticateAccessToken(req, res, next) {
     const token = getAccessTokenFromRequest(req)
 
-    if (!token) {
-        return next(new ApiError(401, 'Missing access token.'))
+    if (token) {
+        try {
+            const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+            if (payload && Number.isInteger(payload.id) && typeof payload.username !== 'undefined') {
+                req.user = {
+                    id: payload.id,
+                    username: payload.username,
+                    is_admin: Boolean(payload.is_admin)
+                }
+                return next()
+            }
+        } catch {
+            // Token invalid or expired, fallback to checking Authelia session
+        }
     }
 
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, payload) => {
-        if (err) {
-            return next(new ApiError(403, 'Access token is invalid or expired.'))
+    try {
+        const autheliaUser = await getAutheliaUser(req, db)
+        if (autheliaUser) {
+            req.user = autheliaUser
+            return next()
         }
+    } catch (err) {
+        console.error('Authelia auth error in authenticateAccessToken:', err)
+    }
 
-        if (!payload || !Number.isInteger(payload.id) || typeof payload.username !== 'string') {
-            return next(new ApiError(403, 'Access token payload is malformed.'))
-        }
-
-        req.user = {
-            id: payload.id,
-            username: payload.username,
-            is_admin: Boolean(payload.is_admin)
-        }
-
-        return next()
-    })
+    return next(new ApiError(401, 'Missing or expired access token.'))
 }
 
 app.post('/token', asyncHandler(async (req, res) => {
-    const refreshToken = getRefreshTokenFromRequest(req)
-
-    let user
+    let refreshToken = null
     try {
-        user = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET)
+        refreshToken = getRefreshTokenFromRequest(req)
     } catch {
-        throw new ApiError(403, 'Refresh token is expired or invalid.')
+        // No refresh token cookie, see if user is authenticated via Authelia
     }
 
-    if (!user || !Number.isInteger(user.id) || typeof user.username !== 'string') {
-        throw new ApiError(403, 'Refresh token payload is malformed.')
+    if (refreshToken) {
+        let user
+        try {
+            user = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET)
+        } catch {
+            user = null
+        }
+
+        if (user && Number.isInteger(user.id) && typeof user.username !== 'undefined') {
+            const tokenRow = await getSql(
+                `SELECT rt.token, rt.user_id, u.username, u.is_admin
+                 FROM refresh_tokens rt
+                 JOIN users u ON u.id = rt.user_id
+                 WHERE rt.token = ?`,
+                [refreshToken]
+            )
+
+            if (tokenRow && tokenRow.user_id === user.id && tokenRow.username === user.username) {
+                const accessToken = generateAccessToken({
+                    id: tokenRow.user_id,
+                    username: tokenRow.username,
+                    is_admin: Boolean(tokenRow.is_admin)
+                })
+
+                res.cookie(ACCESS_COOKIE_NAME, accessToken, getCookieOptions(req, ACCESS_TOKEN_MAX_AGE_MS))
+                return res.json({ message: 'Access token refreshed.' })
+            }
+        }
     }
 
-    const tokenRow = await getSql(
-        `SELECT rt.token, rt.user_id, u.username, u.is_admin
-         FROM refresh_tokens rt
-         JOIN users u ON u.id = rt.user_id
-         WHERE rt.token = ?`,
-        [refreshToken]
-    )
-
-    if (!tokenRow) {
-        throw new ApiError(403, 'Refresh token is invalid or has been revoked.')
+    // Fallback: If refresh token is expired or missing, check Authelia session
+    const autheliaUser = await getAutheliaUser(req, db)
+    if (autheliaUser) {
+        const accessToken = generateAccessToken({
+            id: autheliaUser.id,
+            username: autheliaUser.username,
+            is_admin: Boolean(autheliaUser.is_admin)
+        })
+        res.cookie(ACCESS_COOKIE_NAME, accessToken, getCookieOptions(req, ACCESS_TOKEN_MAX_AGE_MS))
+        return res.json({ message: 'Access token refreshed via Authelia session.' })
     }
 
-    if (tokenRow.user_id !== user.id || tokenRow.username !== user.username) {
-        throw new ApiError(403, 'Refresh token user mismatch.')
-    }
-
-    const accessToken = generateAccessToken({
-        id: tokenRow.user_id,
-        username: tokenRow.username,
-        is_admin: Boolean(tokenRow.is_admin)
-    })
-
-    res.cookie(ACCESS_COOKIE_NAME, accessToken, getCookieOptions(req, ACCESS_TOKEN_MAX_AGE_MS))
-    res.json({ message: 'Access token refreshed.' })
+    throw new ApiError(403, 'Refresh token is expired, invalid, or missing.')
 }))
 
+// Authelia Authentication Endpoints
+app.get('/users/authelia/login', asyncHandler(async (req, res) => {
+    const rawRedirect = req.query.redirect
+    let redirectUrl = '/'
+    if (typeof rawRedirect === 'string' && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')) {
+        redirectUrl = rawRedirect
+    } else if (typeof rawRedirect === 'string' && /^https?:\/\/[a-zA-Z0-9.-]*gian\.ink/.test(rawRedirect)) {
+        redirectUrl = rawRedirect
+    }
+
+    const autheliaUser = await getAutheliaUser(req, db)
+    if (autheliaUser) {
+        // User already has a valid Authelia session!
+        const tokenPayload = {
+            id: autheliaUser.id,
+            username: autheliaUser.username,
+            is_admin: autheliaUser.is_admin
+        }
+        const accessToken = generateAccessToken(tokenPayload)
+        const refreshToken = jwt.sign(tokenPayload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '30d' })
+
+        const decodedRefresh = jwt.decode(refreshToken)
+        if (decodedRefresh && decodedRefresh.exp) {
+            const expiresAt = new Date(decodedRefresh.exp * 1000).toISOString()
+            await runSql(
+                'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
+                [autheliaUser.id, refreshToken, expiresAt]
+            )
+        }
+
+        setAuthCookies(req, res, accessToken, refreshToken)
+
+        if (req.headers.accept && req.headers.accept.includes('application/json')) {
+            return res.json({
+                message: 'Authenticated with Authelia.',
+                user: autheliaUser,
+                redirect: redirectUrl
+            })
+        }
+        return res.redirect(redirectUrl)
+    }
+
+    // User does not have an active Authelia session. Redirect to Authelia portal.
+    const host = req.headers.host || req.hostname || 'gian.ink'
+    const isLocal = host.includes('localhost') || host.includes('127.0.0.1')
+    const proto = isLocal ? 'http' : (req.headers['x-forwarded-proto'] === 'http' && isLocal ? 'http' : 'https')
+    const returnUrl = `${proto}://${host}/users/authelia/login?redirect=${encodeURIComponent(redirectUrl)}`
+    const portalUrl = process.env.AUTHELIA_PORTAL_URL || 'https://auth.gian.ink'
+
+    return res.redirect(`${portalUrl}/?rd=${encodeURIComponent(returnUrl)}`)
+}))
+
+app.get('/users/authelia/session', asyncHandler(async (req, res) => {
+    const autheliaUser = await getAutheliaUser(req, db)
+    if (!autheliaUser) {
+        return res.status(401).json({ authenticated: false })
+    }
+    return res.json({
+        authenticated: true,
+        user: autheliaUser
+    })
+}))
 
 // GET and POST Requests for Registration and Login
 
@@ -309,10 +391,54 @@ app.get('/users', asyncHandler(async (req, res) => {
     })))
 }))
 
-app.get('/users/info', authenticateAccessToken, asyncHandler(async (req,res) => {
+app.get('/users/info', asyncHandler(async (req, res) => {
+    let currentUserId = null
+
+    const token = getAccessTokenFromRequest(req)
+    if (token) {
+        try {
+            const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+            if (payload && Number.isInteger(payload.id)) {
+                currentUserId = payload.id
+            }
+        } catch {
+            // Token expired or invalid
+        }
+    }
+
+    if (!currentUserId) {
+        const autheliaUser = await getAutheliaUser(req, db)
+        if (autheliaUser) {
+            currentUserId = autheliaUser.id
+
+            // Auto-issue standard JWT cookies so all cross-subdomain API calls work seamlessly
+            const tokenPayload = {
+                id: autheliaUser.id,
+                username: autheliaUser.username,
+                is_admin: autheliaUser.is_admin
+            }
+            const accessToken = generateAccessToken(tokenPayload)
+            const refreshToken = jwt.sign(tokenPayload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '30d' })
+
+            const decodedRefresh = jwt.decode(refreshToken)
+            if (decodedRefresh && decodedRefresh.exp) {
+                const expiresAt = new Date(decodedRefresh.exp * 1000).toISOString()
+                await runSql(
+                    'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
+                    [autheliaUser.id, refreshToken, expiresAt]
+                )
+            }
+            setAuthCookies(req, res, accessToken, refreshToken)
+        }
+    }
+
+    if (!currentUserId) {
+        throw new ApiError(401, 'Not authenticated.')
+    }
+
     const user = await getSql(
         'SELECT id, username, is_admin FROM users WHERE id = ?',
-        [req.user.id]
+        [currentUserId]
     )
 
     if (!user) {
@@ -320,10 +446,10 @@ app.get('/users/info', authenticateAccessToken, asyncHandler(async (req,res) => 
     }
 
     res.json({
-            id: req.user.id,
-            username: user.username,
-            is_admin: Boolean(user.is_admin)
-       })
+        id: user.id,
+        username: user.username,
+        is_admin: Boolean(user.is_admin)
+    })
 }))
 
 // Register User

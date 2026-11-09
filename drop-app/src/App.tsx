@@ -5,11 +5,12 @@ import UserBadge from './components/UserBadge'
 import FileDetail from './components/FileDetail'
 import FileUpload from './components/FileUpload'
 import FileList from './components/FileList'
+import PersonalDropPage from './components/PersonalDropPage'
 import { useFileList } from './hooks/useFileList'
 import { getAppUrl } from './utils/fileUtils'
 
 function App() {
-  const { isLoading, isAuthenticated } = useAuth()
+  const { isLoading, isAuthenticated, loginWithAuthelia } = useAuth()
   const { files, loading, showMyFiles, showAllFiles, switchView, addFile, removeFile } = useFileList()
   const appBase = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '')
   const path = window.location.pathname
@@ -18,7 +19,19 @@ function App() {
     : path
   const supHomeboySrc = `${import.meta.env.BASE_URL}SupHomeboy.png`
 
-  // Wait for auth to load before making routing decisions
+  // Route handlers
+  const isLoginRoute = routePath === '/login' || routePath === '/login/'
+  const downloadMatch = routePath.match(/^\/view\/([\w\-]+)\/now\/?$/i)
+  const viewMatch = routePath.match(/^\/view\/([\w\-]+)\/?$/i)
+  const dropMatch = routePath.match(/^\/drop\/([\w\-]+)\/?$/i)
+
+  // Public Personal Drop route (no authentication required)
+  if (dropMatch) {
+    const dropToken = dropMatch[1]
+    return <PersonalDropPage token={dropToken} />
+  }
+
+  // Wait for auth to load before making routing decisions for authenticated routes
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -26,11 +39,6 @@ function App() {
       </div>
     )
   }
-
-  // Route handlers
-  const isLoginRoute = routePath === '/login' || routePath === '/login/'
-  const downloadMatch = routePath.match(/^\/view\/([\w\-]+)\/now\/?$/i)
-  const viewMatch = routePath.match(/^\/view\/([\w\-]+)\/?$/i)
 
   // Login route: redirect to home if already authenticated, otherwise show Login page
   if (isLoginRoute) {
@@ -64,7 +72,19 @@ function App() {
       <div className="header">
         <h1>Gian Dropserver</h1>
         <p>Upload and share your files</p>
-        {isAuthenticated && <UserBadge />}
+        {isAuthenticated ? (
+          <UserBadge />
+        ) : (
+          <div className="header-auth-actions">
+            <button
+              type="button"
+              className="header-login-btn"
+              onClick={() => loginWithAuthelia(window.location.pathname)}
+            >
+              Sign In
+            </button>
+          </div>
+        )}
       </div>
 
       <FileUpload onUploadSuccess={addFile} />

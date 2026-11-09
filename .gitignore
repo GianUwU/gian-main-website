@@ -44,8 +44,9 @@ logs/
 .vite/
 .pytest_cache/
 
-# Uploads (if you want to ignore user uploads)
-# uploads/
+# Uploads
+uploads/
+NodeJsBackend/uploads/
 
 # Databases (uncomment if you don't want to track local DBs)
 # *.db

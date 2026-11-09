@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../AuthContext'
+import { fetchWithTokenRefresh } from '../utils/fetchWithTokenRefresh'
 import {
   formatFileSize,
   formatDate,
@@ -237,7 +238,7 @@ function FileDetail({ fileId }: FileDetailProps) {
 
     try {
       const targetId = file ? file.id : batch!.files[0].id
-      const response = await fetch(`/files/${targetId}`, {
+      const response = await fetchWithTokenRefresh(`/files/${targetId}`, {
         method: 'DELETE',
         credentials: 'include'
       })
