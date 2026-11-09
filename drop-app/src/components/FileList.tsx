@@ -130,7 +130,7 @@ export default function FileList({
                         />
                       ) : (
                         <div className="file-icon">
-                          {ext === 'PDF' ? '📕' : file.file_type?.startsWith('video/') ? '🎬' : file.file_type?.startsWith('audio/') ? '🎵' : '📄'}
+                          {ext === 'PDF' ? '📕' : ext === 'DOCX' || ext === 'DOC' ? '📝' : file.file_type?.startsWith('video/') ? '🎬' : file.file_type?.startsWith('audio/') ? '🎵' : '📄'}
                           <div style={{ fontSize: '12px', marginTop: '5px' }}>
                             {ext}
                           </div>

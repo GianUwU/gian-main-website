@@ -34,6 +34,23 @@ export const isPdf = (filename?: string | null, mimeType?: string | null): boole
   return !!filename.toLowerCase().match(/\.pdf$/i)
 }
 
+export const isDocx = (filename?: string | null, mimeType?: string | null): boolean => {
+  if (typeof mimeType === 'string') {
+    const lower = mimeType.toLowerCase()
+    if (
+      lower === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      lower === 'application/docx'
+    ) {
+      return true
+    }
+    if (lower === 'application/msword' && filename && filename.toLowerCase().endsWith('.docx')) {
+      return true
+    }
+  }
+  if (!filename) return false
+  return !!filename.toLowerCase().match(/\.docx$/i)
+}
+
 export const isSubtitle = (filename?: string | null): boolean => {
   if (!filename) return false
   return !!filename.toLowerCase().match(/\.(srt|vtt)$/i)
@@ -63,13 +80,14 @@ export const isArchive = (filename?: string | null): boolean => {
   return !!filename.toLowerCase().match(/\.(zip|rar|7z|tar|gz|bz2|xz|tgz|iso)$/i)
 }
 
-export type FileCategory = 'image' | 'video' | 'audio' | 'pdf' | 'text' | 'archive' | 'other'
+export type FileCategory = 'image' | 'video' | 'audio' | 'pdf' | 'docx' | 'text' | 'archive' | 'other'
 
 export const getFileCategory = (filename?: string | null, mimeType?: string | null): FileCategory => {
   if (isImage(filename, mimeType)) return 'image'
   if (isVideo(filename, mimeType)) return 'video'
   if (isAudio(filename, mimeType)) return 'audio'
   if (isPdf(filename, mimeType)) return 'pdf'
+  if (isDocx(filename, mimeType)) return 'docx'
   if (isTextOrCode(filename, mimeType)) return 'text'
   if (isArchive(filename)) return 'archive'
   return 'other'

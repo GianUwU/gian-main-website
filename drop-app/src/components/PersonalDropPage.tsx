@@ -297,6 +297,7 @@ export default function PersonalDropPage({ token }: PersonalDropPageProps) {
   const getFileIcon = (filename: string, fileType?: string): string => {
     const ext = filename.split('.').pop()?.toUpperCase() || ''
     if (ext === 'PDF' || fileType?.includes('pdf')) return '📕'
+    if (['DOCX', 'DOC'].includes(ext) || fileType?.includes('wordprocessingml')) return '📝'
     if (fileType?.startsWith('video/') || ['MP4', 'MOV', 'MKV', 'WEBM'].includes(ext)) return '🎬'
     if (fileType?.startsWith('audio/') || ['MP3', 'WAV', 'FLAC', 'M4A'].includes(ext)) return '🎵'
     if (['ZIP', 'RAR', '7Z', 'TAR', 'GZ'].includes(ext)) return '📦'

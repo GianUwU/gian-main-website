@@ -11,12 +11,14 @@ import {
   isVideo,
   isAudio,
   isPdf,
+  isDocx,
   isTextOrCode,
   isSubtitle,
   findMatchingSubtitleFilename,
   getFileCategory,
 } from '../utils/fileUtils'
 import { renderTextWithLinks } from '../utils/linkify'
+import DocxViewer from './DocxViewer'
 import type { FileInfo, BatchInfo } from '../types'
 import '../FileDetail.css'
 
@@ -399,6 +401,17 @@ function FileDetail({ fileId }: FileDetailProps) {
       )
     }
 
+    // DOCX Preview
+    if (isDocx(filename, mimeType)) {
+      return (
+        <DocxViewer
+          key={previewFile.id}
+          file={previewFile}
+          downloadUrl={`/files/${previewFile.id}/now`}
+        />
+      )
+    }
+
     // Text / Code Preview
     if (isTextOrCode(filename, mimeType)) {
       return (
@@ -457,6 +470,8 @@ function FileDetail({ fileId }: FileDetailProps) {
         return '🎵'
       case 'pdf':
         return '📕'
+      case 'docx':
+        return '📝'
       case 'text':
         return isSubtitle(batchFile.original_filename) ? '💬' : '📝'
       case 'archive':
