@@ -100,6 +100,19 @@ export default function DocxViewer({ file, downloadUrl }: DocxViewerProps) {
     setIsFullscreen((prev) => !prev)
   }
 
+  const isZoomSupported =
+    typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('zoom', '1')
+
+  const zoomStyle: React.CSSProperties =
+    zoom !== 100
+      ? isZoomSupported
+        ? ({ zoom: `${zoom}%` } as React.CSSProperties)
+        : {
+            transform: `scale(${zoom / 100})`,
+            transformOrigin: 'top center',
+          }
+      : {}
+
   return (
     <div
       ref={containerRef}
@@ -198,8 +211,7 @@ export default function DocxViewer({ file, downloadUrl }: DocxViewerProps) {
           className="docx-render-host"
           style={{
             display: loading || error ? 'none' : 'flex',
-            transform: `scale(${zoom / 100})`,
-            transformOrigin: 'top center',
+            ...zoomStyle,
           }}
         />
       </div>
