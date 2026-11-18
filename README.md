@@ -11,6 +11,7 @@ A modern full-stack web application monorepo featuring shared authentication, re
 | **Main Portal** | [gian.ink](https://gian.ink) | [GianUwU/gian-main-website](https://github.com/GianUwU/gian-main-website) | Interactive portal and personal project showcase |
 | **MTG Tabletop Sync** | [mtg.gian.ink](https://mtg.gian.ink) | [GianUwU/mtg-tabletop-sync](https://github.com/GianUwU/mtg-tabletop-sync) | Real-time tabletop match tracker with multi-device phone controls |
 | **Finance Tracker** | [finance.gian.ink](https://finance.gian.ink) | [GianUwU/gian-main-website](https://github.com/GianUwU/gian-main-website) | Expense analytics, budget management & reporting |
+| **Guess Who** | [guesswho.gian.ink](https://guesswho.gian.ink) | [GianUwU/guesswho](https://github.com/GianUwU/guesswho) | AI-powered pop culture character guessing game & lore similarity |
 | **Drop** | [drop.gian.ink](https://drop.gian.ink) | [GianUwU/gian-main-website](https://github.com/GianUwU/gian-main-website) | Self-hosted fast file sharing, drag & drop, clipboard paste & preview |
 
 ---
@@ -27,6 +28,12 @@ Real-time synchronized tabletop tracker for Magic: The Gathering matches.
 Personal finance management dashboard with monthly analytics, category breakdowns, and transaction history.
 ![Finance Tracker Analytics](./finance_stats.png)
 ![Finance Tracker Entry Portal](./Finance_Entry.png)
+
+---
+
+### 🎭 Guess Who
+AI-powered pop-culture character guessing game featuring 2-player deep-lore similarity analysis and solo 20-questions mode.
+![Guess Who Preview](./guesswho_preview.png)
 
 ---
 

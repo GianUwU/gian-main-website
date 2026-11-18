@@ -43,6 +43,16 @@ function App() {
       imageAlt: 'Finance Tracker Stats Preview',
     },
     {
+      id: 'guesswho',
+      title: 'Guess Who',
+      icon: '🎭',
+      url: 'https://guesswho.gian.ink',
+      githubUrl: 'https://github.com/GianUwU/guesswho',
+      description: 'AI-powered pop-culture character guessing game with 2-player deep lore similarity analysis and solo 20-questions mode.',
+      image: '/guesswho_preview.png',
+      imageAlt: 'Guess Who Game Preview',
+    },
+    {
       id: 'drop',
       title: 'Drop',
       icon: '📁',
@@ -131,6 +141,16 @@ function App() {
 
   // Route handlers
   const isLoginRoute = path === '/login' || path === '/login/'
+  const isImprintRoute = path === '/imprint' || path === '/imprint/' || path === '/imprint.html'
+  const isPrivacyRoute = path === '/privacy' || path === '/privacy/' || path === '/privacy.html'
+
+  if (isImprintRoute) {
+    window.location.replace('/imprint.html'); return null
+  }
+
+  if (isPrivacyRoute) {
+    window.location.replace('/privacy.html'); return null
+  }
 
   // Show login page only if explicitly on /login route
   if (isLoginRoute) {
@@ -244,6 +264,11 @@ function App() {
 
         <footer className="page-footer">
           <p>All pages built by Gian with the help of GitHub Copilot and Gemini</p>
+          <div className="footer-legal-links">
+            <a href="/imprint.html">Imprint</a>
+            <span className="footer-divider">•</span>
+            <a href="/privacy.html">Privacy Policy</a>
+          </div>
         </footer>
       </div>
     </div>

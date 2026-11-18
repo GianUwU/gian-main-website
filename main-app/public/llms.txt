@@ -1,0 +1,27 @@
+# gian.ink - Developer Portal & Web Applications
+
+> Personal developer portal, portfolio, and central gateway to self-hosted cloud applications operated by Gian in Switzerland.
+
+## Author & Operator
+- Name: Gian
+- Country: Switzerland (Schweiz)
+- Contact: gian@gaudi.ch
+- GitHub: https://github.com/GianUwU
+- Single Sign-On: https://auth.gian.ink (Powered by Authentik)
+
+## Web Applications in the Network
+- [Main Portal](https://gian.ink): Personal project showcase, portfolio, and directory.
+- [Finance Tracker](https://finance.gian.ink): Expense analytics, budget management, monthly breakdown charts, and secure multi-user transaction logging.
+- [Drop Cloud Storage](https://drop.gian.ink): Self-hosted, high-performance file sharing platform. Features drag-and-drop uploads, instant browser previews (PDF, audio, video, images, documents), clipboard pasting, personal drop links, and completely unthrottled streaming transfers with zero download/upload speed limits.
+- [MTG Tabletop Sync](https://mtg.gian.ink): Real-time synchronized tabletop tracker for Magic: The Gathering matches.
+- [Guess Who](https://guesswho.gian.ink): AI-powered pop-culture character guessing game featuring 2-player deep-lore similarity analysis and solo 20-questions mode.
+- [Authentik SSO](https://auth.gian.ink): Centralized authentication and identity provider.
+
+## Architecture
+- Frontends: React 19, TypeScript, Vite, SPA routing
+- Backend: Node.js (Express), SQLite3 databases, JWT session management
+- Reverse Proxy: Traefik v3, Nginx, Let's Encrypt TLS/SSL
+
+## Legal & Compliance
+- Imprint: https://gian.ink/imprint (https://gian.ink/imprint.html)
+- Privacy Policy: https://gian.ink/privacy (https://gian.ink/privacy.html)
